@@ -1,0 +1,21 @@
+{
+  "_about": "Tema claro (prefers-color-scheme: light ou data-theme=light). Mesmos papeis, outros valores.",
+  "color": {
+    "bg": "#f6ecda",
+    "surface": "#ecdcc0",
+    "border": "#c9b08c",
+    "text": "#2a1d15",
+    "text-muted": "#6e5744",
+    "accent": "#bd3a10",
+    "on-accent": "#fff6ea"
+  },
+  "pairs": [
+    ["text", "bg"],
+    ["text", "surface"],
+    ["text-muted", "bg"],
+    ["text-muted", "surface"],
+    ["on-accent", "accent"],
+    ["accent", "bg", "large"],
+    ["accent", "bg"]
+  ]
+}
