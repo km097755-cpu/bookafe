@@ -14,4 +14,6 @@ Os scripts das skills pedem Python 3.8 ou mais novo. No Windows, troque `python3
 
 ## Registro de atividades
 
+- 2026-10-30: cor de destaque do tema claro trocada de `#c73e12` para `#bd3a10`, de 4,35:1 para 4,75:1 de contraste sobre o fundo creme, para o texto pequeno da `.tag` passar no mínimo de 4,5:1 (WCAG AA). Achado pela `/replica-design`.
+
 - 2026-10-30: instaladas as 11 skills da Replica em `.claude/skills/`, no commit `77c9436`. Todos os arquivos foram lidos antes.
