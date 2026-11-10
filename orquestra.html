@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bookafé · Orquestra de agentes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Hanken+Grotesk:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #120d0b; --surface: #231a15; --surface-2: #2e231c; --fg: #f3e6d0; --muted: #b9a58f; --line: #4a3a2f;
+  --accent: #ff6a2b; --on-accent: #1a0d06;
+  --idle: #6b5a4c; --work: #ff6a2b; --review: #f2c14e; --done: #8fc866; --fail: #ff4d4d;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 1rem/1.5 var(--font-body); }
+.wrap { max-width: 76rem; margin-inline: auto; padding: 0 16px 3rem; }
+h1, h2 { font-family: var(--font-display); text-transform: uppercase; line-height: 1; margin: 0; text-wrap: balance; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+header { padding: 2.2rem 0 1.2rem; }
+.eyebrow { font-size: .78rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+h1 { font-size: clamp(2.4rem, 8vw, 4.6rem); font-weight: 900; color: var(--accent); }
+.lead { max-width: 62ch; margin: .8rem 0 0; font-size: 1.08rem; }
+.note { color: var(--muted); font-size: .88rem; margin: .5rem 0 0; max-width: 72ch; }
+
+.stage { display: grid; grid-template-columns: 1fr 20rem; gap: 1rem; align-items: start; }
+.view { position: relative; background: radial-gradient(70% 70% at 50% 50%, #2a1810, var(--bg) 75%); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+canvas { display: block; width: 100%; height: min(70vh, 40rem); min-height: 22rem; touch-action: none; cursor: grab; }
+canvas:active { cursor: grabbing; }
+.hint { position: absolute; left: .8rem; bottom: .6rem; font-size: .8rem; color: var(--muted); pointer-events: none; }
+.phase { position: absolute; left: .8rem; top: .7rem; font: 700 1.3rem var(--font-display); letter-spacing: .06em; text-transform: uppercase; pointer-events: none; }
+.legend { position: absolute; right: .8rem; top: .7rem; display: grid; gap: .15rem; font-size: .78rem; color: var(--muted); pointer-events: none; }
+.legend i { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .35rem; }
+
+.side { display: grid; gap: 1rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; }
+.card h2 { font-size: 1rem; letter-spacing: .1em; color: var(--muted); margin-bottom: .7rem; }
+label { display: flex; justify-content: space-between; font-size: .92rem; }
+label b { font-variant-numeric: tabular-nums; color: var(--accent); font-size: 1.1rem; }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: .4rem 0 .9rem; min-height: 1.75rem; }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.btn { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .6rem; cursor: pointer; min-height: 2.75rem; }
+.btn.go { grid-column: 1 / -1; background: var(--accent); color: var(--on-accent); border: 0; font-weight: 700; font-size: 1.05rem; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+dl { display: grid; grid-template-columns: 1fr auto; gap: .3rem .8rem; margin: 0; }
+dt { color: var(--muted); font-size: .92rem; }
+dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.bar { height: .6rem; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin-top: .8rem; }
+.bar i { display: block; height: 100%; width: 0; background: var(--done); }
+#result { margin: .8rem 0 0; font-size: .95rem; min-height: 3em; }
+#result b { color: var(--accent); }
+
+@media (max-width: 860px) { .stage { grid-template-columns: 1fr; } canvas { height: 55vh; } .legend { display: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Bookafé · demo interativa</p>
+    <h1>Orquestra de agentes</h1>
+    <p class="lead">Um agente líder no centro divide uma missão grande entre centenas de subagentes, confere o trabalho de cada um e manda refazer o que não passou. Gire o mundo 3D, mude o tamanho da equipe e provoque falhas para ver o laço se recuperar.</p>
+    <p class="note">Simulação visual: nenhuma IA é chamada. Tempos e taxas são do modelo da simulação, não medições de um sistema real. O 3D e o som são gerados em código, sem bibliotecas.</p>
+  </header>
+
+  <div class="stage">
+    <div class="view">
+      <canvas id="c" aria-label="Mundo 3D: agente líder no centro e subagentes ao redor, coloridos pelo estado"></canvas>
+      <div class="phase" id="phase" aria-live="polite">Aguardando missão</div>
+      <div class="legend">
+        <span><i style="background:var(--idle)"></i>Livre</span>
+        <span><i style="background:var(--work)"></i>Executando</span>
+        <span><i style="background:var(--review)"></i>Verificando</span>
+        <span><i style="background:var(--done)"></i>Aprovou</span>
+        <span><i style="background:var(--fail)"></i>Falhou, refazer</span>
+      </div>
+      <div class="hint">Arraste para girar · role ou pince para aproximar</div>
+    </div>
+
+    <div class="side">
+      <section class="card" aria-labelledby="t-ctl">
+        <h2 id="t-ctl">Missão: auditar 1.200 arquivos</h2>
+        <label for="n">Subagentes <b id="nv">170</b></label>
+        <input id="n" type="range" min="1" max="1000" value="170">
+        <div class="btns">
+          <button class="btn go" id="go">Iniciar missão</button>
+          <button class="btn" id="fail" disabled>Injetar falha</button>
+          <button class="btn" id="snd" aria-pressed="true">Som ligado</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="t-hud">
+        <h2 id="t-hud">Painel</h2>
+        <dl>
+          <dt>Na fila</dt><dd id="s-q">1200</dd>
+          <dt>Executando</dt><dd id="s-w">0</dd>
+          <dt>Em verificação</dt><dd id="s-r">0</dd>
+          <dt>Aprovados</dt><dd id="s-d">0</dd>
+          <dt>Refeitos</dt><dd id="s-x">0</dd>
+          <dt>Tempo simulado</dt><dd id="s-t">0 min</dd>
+        </dl>
+        <div class="bar" role="progressbar" aria-label="Progresso da missão" aria-valuemin="0" aria-valuemax="1200" aria-valuenow="0" id="pb"><i id="bar"></i></div>
+        <p id="result"></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+var TOTAL = 1200, WORK = [6, 14], REVIEW = [2, 5], REJECT = 0.08;   /* tempos em minutos simulados */
+var SOLO = TOTAL * (10 + 3.5) * (1 / (1 - REJECT));                 /* estimativa para 1 agente sozinho */
+var COL = { idle: "#6b5a4c", work: "#ff6a2b", review: "#f2c14e", done: "#8fc866", fail: "#ff4d4d" };
+var $ = function (id) { return document.getElementById(id); };
+var cv = $("c"), g = cv.getContext("2d");
+var agents = [], pulses = [], q = TOTAL, toReview = 0, done = 0, redo = 0, clock = 0, running = false;
+var yaw = 0.6, pitch = -0.35, zoom = 1, dragging = false, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function rnd(r) { return r[0] + Math.random() * (r[1] - r[0]); }
+
+/* subagentes distribuidos numa esfera de Fibonacci */
+function layout(n) {
+  var keep = agents.slice(0, n);
+  agents.slice(n).forEach(function (a) { if (a.s === "work") q++; if (a.s === "review") toReview++; });
+  for (var i = keep.length; i < n; i++) keep.push({ s: "idle", t: 0, glow: 0 });
+  var ga = Math.PI * (3 - Math.sqrt(5));
+  keep.forEach(function (a, i) {
+    var y = n === 1 ? 0 : 1 - 2 * (i + 0.5) / n, r = Math.sqrt(1 - y * y), th = i * ga;
+    a.x = Math.cos(th) * r; a.y = y; a.z = Math.sin(th) * r;
+  });
+  agents = keep;
+}
+
+/* som gerado em codigo */
+var ac = null, soundOn = true, lastBlip = 0;
+function tone(f, d, type, vol) {
+  if (!ac || !soundOn) return;
+  var o = ac.createOscillator(), v = ac.createGain(), t = ac.currentTime;
+  o.type = type || "sine"; o.frequency.value = f;
+  v.gain.setValueAtTime(vol || 0.05, t); v.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(v).connect(ac.destination); o.start(t); o.stop(t + d);
+}
+function blip() {
+  var now = performance.now(); if (now - lastBlip < 70) return; lastBlip = now;
+  tone(330 + 660 * done / TOTAL, 0.12, "triangle", 0.04);
+}
+
+function pulse(a, color) { if (pulses.length < 160) pulses.push({ a: a, p: 0, c: color }); }
+
+function tick(dt) {
+  clock += dt;
+  for (var i = 0; i < agents.length; i++) {
+    var a = agents[i];
+    a.glow = Math.max(0, a.glow - dt / 3);
+    if (a.s === "idle" || a.s === "done" || a.s === "fail") {
+      if (a.s !== "idle" && a.glow > 0) continue;          /* mostra o resultado por um instante */
+      if (toReview > 0) { toReview--; a.s = "review"; a.t = rnd(REVIEW); pulse(a, COL.review); }
+      else if (q > 0) { q--; a.s = "work"; a.t = rnd(WORK); pulse(a, COL.work); }
+      else a.s = "idle";
+    } else if ((a.t -= dt) <= 0) {
+      if (a.s === "work") { toReview++; a.s = "idle"; }
+      else if (Math.random() < REJECT) { q++; redo++; a.s = "fail"; a.glow = 1; tone(110, 0.2, "sawtooth", 0.03); }
+      else { done++; a.s = "done"; a.glow = 1; blip(); }
+    }
+  }
+  if (done >= TOTAL) finish();
+}
+
+function finish() {
+  running = false; $("fail").disabled = true; $("go").textContent = "Nova missão";
+  agents.forEach(function (a) { a.s = "done"; a.glow = 1; });
+  [523, 659, 784, 1047].forEach(function (f, i) { setTimeout(function () { tone(f, 0.5, "triangle", 0.06); }, i * 130); });
+  $("phase").textContent = "Missão concluída";
+  $("result").innerHTML = "Concluído em <b>" + fmt(clock) + "</b> com " + agents.length + (agents.length === 1 ? " agente" : " subagentes") +
+    ". Um agente sozinho levaria cerca de " + fmt(SOLO) + ": <b>" + Math.max(1, Math.round(SOLO / clock)) + "× mais rápido</b>, com " + redo + " itens refeitos no caminho.";
+  hud();
+}
+
+function fmt(m) { return m < 90 ? Math.round(m) + " min" : m < 2880 ? (m / 60).toFixed(1).replace(".", ",") + " h" : (m / 1440).toFixed(1).replace(".", ",") + " dias"; }
+
+function hud() {
+  var w = 0, r = 0;
+  agents.forEach(function (a) { if (a.s === "work") w++; else if (a.s === "review") r++; });
+  $("s-q").textContent = q; $("s-w").textContent = w; $("s-r").textContent = r + toReview;
+  $("s-d").textContent = done; $("s-x").textContent = redo; $("s-t").textContent = fmt(clock);
+  $("bar").style.width = (100 * done / TOTAL) + "%"; $("pb").setAttribute("aria-valuenow", done);
+  if (running) $("phase").textContent = q > TOTAL * 0.5 ? "Distribuindo trabalho" : done < TOTAL * 0.9 ? "Executando e verificando" : "Fechando pendências";
+}
+
+/* renderizacao 3D manual: rotacao + projecao em perspectiva */
+function resize() {
+  var d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect();
+  cv.width = r.width * d; cv.height = r.height * d;
+}
+function project(a, cx, cy, R) {
+  var cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  var x = a.x * cyw + a.z * syw, z = -a.x * syw + a.z * cyw, y = a.y * cp - z * sp; z = a.y * sp + z * cp;
+  var k = 2.6 / (2.6 - z);
+  return { x: cx + x * R * k, y: cy + y * R * k, k: k, z: z };
+}
+function draw() {
+  var W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.34 * zoom, n = agents.length;
+  g.clearRect(0, 0, W, H);
+  var pts = agents.map(function (a) { var p = project(a, cx, cy, R); p.a = a; return p; }).sort(function (p, q2) { return p.z - q2.z; });
+  var base = Math.max(1.6, Math.min(9, 60 / Math.sqrt(n))) * (W / 900 + 0.4);
+
+  g.lineCap = "round";
+  pulses.forEach(function (pl) {
+    var p = project(pl.a, cx, cy, R), t = pl.p, t0 = Math.max(0, t - 0.35);
+    g.strokeStyle = pl.c; g.globalAlpha = 0.55 * (1 - t); g.lineWidth = 1.5 * p.k;
+    g.beginPath(); g.moveTo(cx + (p.x - cx) * t0, cy + (p.y - cy) * t0); g.lineTo(cx + (p.x - cx) * t, cy + (p.y - cy) * t); g.stroke();
+  });
+  g.globalAlpha = 1;
+
+  var drewCore = false;
+  function core() {
+    drewCore = true;
+    var pr = base * 2.2 + 6 + Math.sin(performance.now() / 300) * (running ? 3 : 1);
+    var gr = g.createRadialGradient(cx, cy, 0, cx, cy, pr * 3.2);
+    gr.addColorStop(0, "#fff3e0"); gr.addColorStop(0.25, "#ff6a2b"); gr.addColorStop(1, "rgba(255,106,43,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, pr * 3.2, 0, 7); g.fill();
+  }
+  pts.forEach(function (p) {
+    if (!drewCore && p.z >= 0) core();
+    var a = p.a, depth = 0.35 + 0.65 * (p.z + 1) / 2;
+    g.globalAlpha = depth; g.fillStyle = COL[a.s];
+    g.beginPath(); g.arc(p.x, p.y, base * p.k * (1 + a.glow * 0.9), 0, 7); g.fill();
+  });
+  if (!drewCore) core();
+  g.globalAlpha = 1;
+}
+
+var last = performance.now(), hudAt = 0;
+function frame(now) {
+  var real = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!dragging && !still) yaw += real * 0.12;
+  if (running) { var sub = 4; for (var i = 0; i < sub; i++) if (running) tick(real * 4 / sub * 4); }
+  pulses = pulses.filter(function (p) { return (p.p += real * 2.2) < 1; });
+  draw();
+  if (now - hudAt > 120) { hud(); hudAt = now; }
+  requestAnimationFrame(frame);
+}
+
+/* controles */
+$("n").addEventListener("input", function () { $("nv").textContent = this.value; layout(+this.value); });
+$("go").onclick = function () {
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (ac && ac.state === "suspended") ac.resume();
+  q = TOTAL; toReview = done = redo = 0; clock = 0; pulses = [];
+  agents.forEach(function (a) { a.s = "idle"; a.t = 0; a.glow = 0; });
+  running = true; $("fail").disabled = false; $("result").textContent = ""; this.textContent = "Reiniciar missão";
+  tone(220, 0.4, "sine", 0.06);
+};
+$("fail").onclick = function () {
+  var hit = 0;
+  agents.forEach(function (a) {
+    if ((a.s === "work" || a.s === "review") && Math.random() < 0.3) {
+      if (a.s === "work") q++; else toReview++;
+      redo++; hit++; a.s = "fail"; a.glow = 1.6;
+    }
+  });
+  tone(80, 0.5, "sawtooth", 0.07);
+  $("result").textContent = hit + " subagentes caíram. O líder devolveu as tarefas para a fila e a equipe segue.";
+};
+$("snd").onclick = function () {
+  soundOn = !soundOn; this.setAttribute("aria-pressed", soundOn); this.textContent = soundOn ? "Som ligado" : "Som desligado";
+};
+
+var px, py, pinch = 0, touches = {};
+cv.addEventListener("pointerdown", function (e) { cv.setPointerCapture(e.pointerId); touches[e.pointerId] = e; dragging = true; px = e.clientX; py = e.clientY; pinch = 0; });
+cv.addEventListener("pointermove", function (e) {
+  if (!dragging) return; touches[e.pointerId] = e;
+  var ids = Object.keys(touches);
+  if (ids.length === 2) {
+    var a = touches[ids[0]], b = touches[ids[1]], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    if (pinch) zoom = Math.max(0.5, Math.min(2.5, zoom * d / pinch)); pinch = d; return;
+  }
+  yaw += (e.clientX - px) * 0.008; pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - py) * 0.008)); px = e.clientX; py = e.clientY;
+});
+function up(e) { delete touches[e.pointerId]; pinch = 0; if (!Object.keys(touches).length) dragging = false; }
+cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+cv.addEventListener("wheel", function (e) { e.preventDefault(); zoom = Math.max(0.5, Math.min(2.5, zoom * (e.deltaY < 0 ? 1.08 : 0.93))); }, { passive: false });
+addEventListener("resize", resize);
+
+layout(170); resize(); hud(); requestAnimationFrame(frame);
+</script>
+</html>
