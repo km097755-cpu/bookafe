@@ -5,3 +5,5 @@ Landing page do Bookafé, hamburgueria artesanal fictícia, com cardápio em des
 Página única (HTML, CSS e JavaScript no mesmo arquivo). Não precisa instalar nada: baixe o `index.html` e abra com duplo clique no navegador.
 
 Feito em português do Brasil, valores em reais.
+
+Demo interativa: abra `demo.html` para ver, passo a passo, como um agente de IA altera o cardápio (simulação roteirizada, sem chamadas a IA).
