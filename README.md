@@ -9,3 +9,5 @@ Feito em português do Brasil, valores em reais.
 Demo interativa: abra `demo.html` para ver, passo a passo, como um agente de IA altera o cardápio (simulação roteirizada, sem chamadas a IA).
 
 Demo 3D: abra `orquestra.html` para ver um agente líder coordenando até mil subagentes em laço de execução e verificação (simulação, com 3D e som gerados em código).
+
+Lançamento: abra `lancamento.html` para explorar os números do anúncio (placar de testes, corrida dos mil agentes e calculadora de custo). Página não oficial.

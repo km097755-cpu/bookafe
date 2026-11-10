@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fable 5.2 em números</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Hanken+Grotesk:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #120d0b; --surface: #231a15; --surface-2: #2e231c; --fg: #f3e6d0; --muted: #b9a58f; --line: #4a3a2f;
+  --accent: #ff6a2b; --on-accent: #1a0d06; --other: #8a7666; --ok: #8fc866;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root {
+  --bg: #f6ecda; --surface: #ecdcc0; --surface-2: #e2cfae; --fg: #2a1d15; --muted: #6e5744; --line: #c9b08c;
+  --accent: #c73e12; --on-accent: #fff6ea; --other: #9c8468; --ok: #3f7a1c; color-scheme: light; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 1rem/1.55 var(--font-body); }
+.wrap { max-width: 68rem; margin-inline: auto; padding: 0 16px 4rem; }
+h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; line-height: 1; margin: 0; text-wrap: balance; }
+button, input { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+header { padding: 2.5rem 0 1rem; }
+.eyebrow { font-size: .78rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5rem; }
+h1 { font-size: clamp(3rem, 11vw, 6.5rem); font-weight: 900; color: var(--accent); }
+.lead { max-width: 60ch; margin: .9rem 0 0; font-size: 1.12rem; }
+.note { color: var(--muted); font-size: .88rem; margin: .5rem 0 0; max-width: 74ch; }
+
+section { margin-top: 2.5rem; }
+section > h2 { font-size: clamp(1.6rem, 4vw, 2.3rem); margin-bottom: .3rem; }
+section > p { margin: 0 0 1rem; color: var(--muted); max-width: 70ch; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+.chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: .45rem .9rem; cursor: pointer; min-height: 2.75rem; font-size: .92rem; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+
+/* barras */
+.what { margin: 0 0 .9rem; font-size: .95rem; }
+.what b { color: var(--fg); }
+.rows { display: grid; gap: .55rem; }
+.row { display: grid; grid-template-columns: 9.5rem 1fr 4rem; gap: .7rem; align-items: center; }
+.row .lab { font-size: .92rem; }
+.row.me .lab { font-weight: 700; }
+.track { height: 1.5rem; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--other); border-radius: 6px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+.row.me .fill { background: var(--accent); }
+.val { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.row.na .val { color: var(--muted); font-weight: 400; }
+.verdict { margin: 1rem 0 0; font-size: 1rem; }
+.verdict b { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+
+/* corrida */
+.race { display: grid; gap: .9rem; }
+.clock { font: 900 2.6rem var(--font-display); font-variant-numeric: tabular-nums; }
+.ctl { display: flex; gap: .7rem; align-items: center; }
+.ctl input { flex: 1; accent-color: var(--accent); min-height: 2rem; }
+.btn { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 10px; padding: .55rem 1.1rem; font-weight: 700; cursor: pointer; min-height: 2.75rem; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; margin-top: .4rem; }
+.facts div { background: var(--surface-2); border-radius: 10px; padding: .7rem .8rem; font-size: .9rem; color: var(--muted); }
+.facts b { display: block; font: 900 1.7rem var(--font-display); color: var(--fg); }
+
+/* custo */
+.calc { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.calc label { display: flex; justify-content: space-between; font-size: .95rem; }
+.calc label b { font-variant-numeric: tabular-nums; color: var(--accent); }
+.calc input[type=range] { width: 100%; accent-color: var(--accent); margin: .3rem 0 1rem; min-height: 2rem; }
+.out { display: grid; gap: .5rem; align-content: start; }
+.out div { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem .8rem; background: var(--surface-2); border-radius: 10px; }
+.out div.me { outline: 2px solid var(--accent); }
+.out b { font-variant-numeric: tabular-nums; }
+.save { color: var(--ok); font-weight: 700; margin: .3rem 0 0; }
+
+/* feitos */
+.feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .8rem; }
+.feat b { display: block; font: 900 2.8rem var(--font-display); color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; }
+.feat h3 { font-size: 1.05rem; margin: .4rem 0 .3rem; letter-spacing: .04em; }
+.feat p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+.more { display: flex; flex-wrap: wrap; gap: .6rem; }
+.more a { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem 1rem; text-decoration: none; min-height: 2.75rem; }
+footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+
+@media (max-width: 720px) {
+  .row { grid-template-columns: 6.6rem 1fr 3.4rem; gap: .4rem; } .row .lab { font-size: .8rem; }
+  .calc, .facts { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Demo interativa não oficial · lançamento de 9 de novembro de 2026</p>
+    <h1>Fable 5.2 em números</h1>
+    <p class="lead">Compare o modelo com a geração anterior e com os concorrentes, reveja a corrida dos mil agentes e calcule quanto custa usar. Tudo clicável.</p>
+    <p class="note">Página independente, sem vínculo com a Anthropic. Os dados foram transcritos da página de anúncio em 10/11/2026; confira a fonte no rodapé antes de citar qualquer número.</p>
+  </header>
+
+  <section aria-labelledby="t-bench">
+    <h2 id="t-bench">1 · Placar dos testes</h2>
+    <p>Escolha um teste. Cada barra é a pontuação de um modelo no maior nível de esforço disponível, segundo a tabela do anúncio. Um traço indica que o anúncio não traz o dado.</p>
+    <div class="card">
+      <div class="chips" id="chips"></div>
+      <p class="what" id="what"></p>
+      <div class="rows" id="rows"></div>
+      <p class="verdict" id="verdict" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-race">
+    <h2 id="t-race">2 · Mil agentes contra o Último Teorema de Fermat</h2>
+    <p>Segundo o anúncio, uma equipe de 1.000 agentes Fable 5.2 formalizou a prova em Lean em 30 horas. Com a mesma estrutura, o Opus 5.5 chegou a 26% em 18 horas e quase não avançou depois. Arraste o relógio.</p>
+    <div class="card race">
+      <div class="clock" id="clock">0 h</div>
+      <div class="rows">
+        <div class="row me"><span class="lab">Fable 5.2</span><div class="track"><div class="fill" id="r-f" style="transition:none"></div></div><span class="val" id="v-f">0%</span></div>
+        <div class="row"><span class="lab">Opus 5.5</span><div class="track"><div class="fill" id="r-o" style="transition:none"></div></div><span class="val" id="v-o">0%</span></div>
+      </div>
+      <div class="ctl">
+        <button class="btn" id="play">Rodar</button>
+        <input type="range" id="time" min="0" max="30" step="0.25" value="0" aria-label="Horas decorridas">
+      </div>
+      <p class="note">Pontos conhecidos: 100% em 30 h (Fable 5.2) e 26% em 18 h (Opus 5.5). O caminho entre eles é ilustrativo, traçado em linha reta.</p>
+      <div class="facts">
+        <div><b>11 dias</b>levou a primeira formalização</div>
+        <div><b>7×</b>mais curta ficou a prova</div>
+        <div><b>⅓</b>dos tokens de ação gastos</div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-cost">
+    <h2 id="t-cost">3 · Quanto custa</h2>
+    <p>Preço por milhão de tokens: US$ 8 de entrada e US$ 40 de saída, contra US$ 10 e US$ 50 do Fable 5.1. O modo rápido (até 2,5× mais veloz) custa US$ 16 e US$ 80.</p>
+    <div class="card calc">
+      <div>
+        <label for="tin">Tokens de entrada <b id="tin-v"></b></label>
+        <input type="range" id="tin" min="0" max="500" value="100">
+        <label for="tout">Tokens de saída <b id="tout-v"></b></label>
+        <input type="range" id="tout" min="0" max="100" value="20">
+      </div>
+      <div class="out">
+        <div class="me"><span>Fable 5.2</span><b id="c-52"></b></div>
+        <div><span>Fable 5.2, modo rápido</span><b id="c-fast"></b></div>
+        <div><span>Fable 5.1</span><b id="c-51"></b></div>
+        <p class="save" id="save"></p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-feats">
+    <h2 id="t-feats">4 · Feitos citados no anúncio</h2>
+    <p>Resultados relatados pela Anthropic e por clientes, não verificados por esta página.</p>
+    <div class="feats">
+      <div class="card feat"><b>1.000+</b><h3>Subagentes por 8 dias</h3><p>Partindo de uma pasta vazia, coordenou a construção de um sistema operacional que inicializa em um notebook.</p></div>
+      <div class="card feat"><b>26×</b><h3>Partida mais rápida</h3><p>Migração de um serviço de produção de Python para Rust, feita por uma equipe de agentes.</p></div>
+      <div class="card feat"><b>36×</b><h3>Código científico acelerado</h3><p>Código de fônons do Quantum ESPRESSO: 13 casos caíram de 3,3 horas para menos de 4 minutos na mesma GPU.</p></div>
+      <div class="card feat"><b>3.500+</b><h3>Provas verificadas</h3><p>Um hipervisor construído em uma única sessão, com provas checadas por máquina.</p></div>
+      <div class="card feat"><b>&lt; 1 dia</b><h3>Por placa eletrônica</h3><p>Três aparelhos funcionais, cada placa de quatro camadas pronta para fabricação.</p></div>
+      <div class="card feat"><b>~170</b><h3>Agentes revisores</h3><p>Auditoria de segurança de 10 a 12 horas na Uber, com relatório, correções e proposta de política.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-more">
+    <h2 id="t-more">5 · Veja em ação</h2>
+    <p>Duas simulações deste repositório que ilustram as ideias acima.</p>
+    <div class="more">
+      <a href="orquestra.html">Orquestra de agentes em 3D →</a>
+      <a href="demo.html">Bastidores do agente →</a>
+    </div>
+  </section>
+
+  <footer>Fonte: <a href="https://www.anthropic.com/claude-fable-and-mythos-5-2">anúncio do Claude Fable 5.2 e Mythos 5.2</a> e <a href="https://www.anthropic.com/claude/fable">página do produto</a>. Testes de cibersegurança e de design de proteínas ficaram de fora porque os números publicados são do Mythos 5.2.</footer>
+</div>
+
+<script>
+var MODELS = ["Fable 5.2", "Fable 5.1", "Opus 5.5", "GPT-6 Astra", "Gemini 4 Carbon"];
+var BENCH = [
+  { n: "FrontierCode 2.0", d: "Código: mudanças que mantenedores de projetos abertos aceitariam", v: [49.1, 32.4, 45.5, 42.8, 41.1] },
+  { n: "FrontierSWE v2", d: "Código: engenharia de software feita por agentes", v: [69.9, 56.3, 62.3, 65.5, 61.2] },
+  { n: "AutomationBench", d: "Fluxos de trabalho de negócios", v: [51.4, 31.4, 42.5, 41.4, 53.9] },
+  { n: "Terminal-Bench-Science", d: "Pesquisa científica feita por agentes", v: [74.6, 52.6, 58.7, 68.1, 64.8] },
+  { n: "WANDR", d: "Busca: grandes tarefas de coleta de dados", v: [82.1, 68.7, 72.3, null, null] },
+  { n: "OSWorld 2.1", d: "Uso de computador (subconjunto offline, parcial)", v: [89.3, 83.5, 87.2, 79.5, 81.5] },
+  { n: "RoboDojo Sim", d: "Robótica: controla um robô simulado de dois braços a partir de imagens", v: [64.9, 27.6, 39.4, 29.8, null] },
+  { n: "AA-Briefcase v1.1", d: "Trabalho de conhecimento (nota por rubrica)", v: [66.1, 61.5, 61.2, 52.0, 61.8] },
+  { n: "Remote Labor Index", d: "Trabalho remoto de ponta a ponta", v: [41.3, 17.9, 21.3, 20.8, null] },
+  { n: "Humanity's Last Exam", d: "Raciocínio multidisciplinar de nível especialista, com ferramentas", v: [74.2, 65.6, 67.7, 57.2, null] },
+  { n: "Chartography", d: "Leitura de gráficos e figuras, sem ferramentas", v: [73.4, 44.8, 64.4, 71.0, 72.5] }
+];
+var $ = function (id) { return document.getElementById(id); };
+function pct(v) { return v.toFixed(1).replace(".", ",") + "%"; }
+function usd(v) { return "US$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+/* 1 · placar */
+var rows = $("rows");
+MODELS.forEach(function (m, i) {
+  var r = document.createElement("div"); r.className = "row" + (i === 0 ? " me" : "");
+  r.innerHTML = '<span class="lab">' + m + '</span><div class="track"><div class="fill"></div></div><span class="val"></span>';
+  rows.appendChild(r);
+});
+function leads(b) { return b.v.every(function (x) { return x === null || x <= b.v[0]; }); }
+var wins = BENCH.filter(leads).length;
+
+function pick(i) {
+  var b = BENCH[i];
+  [].forEach.call($("chips").children, function (c, j) { c.setAttribute("aria-pressed", j === i); });
+  $("what").innerHTML = "<b>" + b.n + "</b> · " + b.d;
+  [].forEach.call(rows.children, function (r, j) {
+    var v = b.v[j];
+    r.classList.toggle("na", v === null);
+    r.querySelector(".fill").style.width = (v === null ? 0 : v) + "%";
+    r.querySelector(".val").textContent = v === null ? "—" : pct(v);
+    r.querySelector(".val").setAttribute("aria-label", v === null ? "sem dado publicado" : pct(v));
+  });
+  var gain = (b.v[0] - b.v[1]).toFixed(1).replace(".", ","), best = Math.max.apply(null, b.v.filter(function (x) { return x !== null; }));
+  $("verdict").innerHTML = "<b>+" + gain + " pontos</b> sobre o Fable 5.1. " +
+    (leads(b) ? "Maior pontuação entre os modelos listados." : "Aqui não lidera: " + MODELS[b.v.indexOf(best)] + " marca " + pct(best) + ".") +
+    " No conjunto, lidera em " + wins + " dos " + BENCH.length + " testes desta página.";
+}
+BENCH.forEach(function (b, i) {
+  var c = document.createElement("button"); c.className = "chip"; c.type = "button"; c.textContent = b.n;
+  c.onclick = function () { pick(i); }; $("chips").appendChild(c);
+});
+pick(0);
+
+/* 2 · corrida */
+var time = $("time"), playing = null;
+function race() {
+  var h = +time.value, f = h / 30 * 100, o = h <= 18 ? h / 18 * 26 : 26 + (h - 18) / 12;
+  $("clock").textContent = h.toFixed(h % 1 ? 2 : 0).replace(".", ",") + " h";
+  $("r-f").style.width = f + "%"; $("v-f").textContent = Math.round(f) + "%";
+  $("r-o").style.width = o + "%"; $("v-o").textContent = Math.round(o) + "%";
+}
+time.addEventListener("input", race);
+$("play").onclick = function () {
+  if (playing) { clearInterval(playing); playing = null; this.textContent = "Rodar"; return; }
+  if (+time.value >= 30) time.value = 0;
+  var btn = this; btn.textContent = "Pausar";
+  playing = setInterval(function () {
+    time.value = +time.value + 0.25; race();
+    if (+time.value >= 30) { clearInterval(playing); playing = null; btn.textContent = "Rodar de novo"; }
+  }, 50);
+};
+race();
+
+/* 3 · custo */
+function cost() {
+  var i = +$("tin").value, o = +$("tout").value;
+  $("tin-v").textContent = i + " milhões"; $("tout-v").textContent = o + " milhões";
+  var a = 8 * i + 40 * o, b = 10 * i + 50 * o;
+  $("c-52").textContent = usd(a); $("c-fast").textContent = usd(16 * i + 80 * o); $("c-51").textContent = usd(b);
+  $("save").textContent = b > 0 ? "Economia de " + usd(b - a) + " (20%) em relação ao Fable 5.1." : "";
+}
+$("tin").addEventListener("input", cost); $("tout").addEventListener("input", cost); cost();
+</script>
+</html>
