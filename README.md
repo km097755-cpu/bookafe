@@ -10,6 +10,7 @@ O cliente escolhe os itens, vê o subtotal de cada produto e o total, paga com *
 |---|---|
 | `index.html` | O cardápio (o que o cliente vê) |
 | `qr-mesas.html` | Gera e imprime um QR Code por mesa. Cada QR abre o cardápio com o número da mesa já preenchido |
+| `qr-mesas.pdf` | Pronto para imprimir: Balcão + Mesas 1 a 10, 6 por folha A4 (2 folhas) |
 
 Não precisa instalar nada: abra com duplo clique no navegador. Funciona sem internet (só as fontes vêm da internet).
 
@@ -31,5 +32,8 @@ Abra `index.html` no Bloco de Notas. Logo no começo tem a **ÁREA DE EDIÇÃO**
 
 ## QR Codes das mesas
 
-1. Publique o cardápio (GitHub Pages, por exemplo) para ter um endereço público.
-2. Abra `qr-mesas.html`, cole o endereço, escolha o número de mesas e clique em **Imprimir** (6 por folha A4).
+O Bookafé tem **10 mesas** (mude `mesas: 10` na área de edição se isso mudar). Os QR apontam para `https://km097755-cpu.github.io/bookafe/?mesa=N`.
+
+1. Ligue o GitHub Pages do repositório (Settings → Pages → branch `main`, pasta `/root`). Sem isso os QR não abrem nada.
+2. Imprima `qr-mesas.pdf`, recorte e cole cada QR na mesa do mesmo número.
+3. Mudou o número de mesas ou o endereço? Abra `qr-mesas.html`, ajuste e clique em **Imprimir**.

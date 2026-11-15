@@ -37,6 +37,9 @@ var LOJA = {
   // Como o cliente pode receber o pedido (true = aparece, false = some).
   modos: { mesa: true, retirada: true, entrega: false },
 
+  // Quantas mesas o Bookafé tem (numeradas de 1 até este número).
+  mesas: 10,
+
   livros: "A PREENCHER: conte aqui como funcionam os livros no Bookafé (leitura no local, venda, empréstimo, indicações da semana)."
 };
 
@@ -334,6 +337,7 @@ textarea { min-height: 4rem; resize: vertical; }
   Object.keys(cart).forEach(function (id) { if (!produtos[id] || produtos[id].esgotado) delete cart[id]; });
   var params = new URLSearchParams(location.search);
   var mesaUrl = (params.get("mesa") || "").replace(/\D/g, "");
+  if (mesaUrl && (+mesaUrl < 1 || +mesaUrl > LOJA.mesas)) mesaUrl = "";
   var pedidoId = null;
   var waUrl = "#";
 
@@ -441,6 +445,7 @@ textarea { min-height: 4rem; resize: vertical; }
 
   // ---------- janela do pedido ----------
   var MODOS = { mesa: "Na mesa", retirada: "Retirar no balcão", entrega: "Entrega" };
+  $("mesa").max = LOJA.mesas;
   function renderModos() {
     var on = Object.keys(MODOS).filter(function (k) { return LOJA.modos[k]; });
     var padrao = mesaUrl && LOJA.modos.mesa ? "mesa" : on[0];
@@ -483,7 +488,8 @@ textarea { min-height: 4rem; resize: vertical; }
   function validar() {
     if (!itensDoPedido().length) return "Escolha pelo menos um item.";
     if (!$("cliente").value.trim()) { $("cliente").focus(); return "Digite seu nome."; }
-    if (modo() === "mesa" && !$("mesa").value) { $("mesa").focus(); return "Digite o número da mesa."; }
+    var nm = parseInt($("mesa").value, 10);
+    if (modo() === "mesa" && !(nm >= 1 && nm <= LOJA.mesas)) { $("mesa").focus(); return "Digite o número da mesa (de 1 a " + LOJA.mesas + ")."; }
     if (modo() === "entrega" && !$("endEntrega").value.trim()) { $("endEntrega").focus(); return "Digite o endereço de entrega."; }
     return "";
   }

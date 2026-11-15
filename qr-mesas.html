@@ -44,7 +44,7 @@ button { min-height: 2.9rem; padding: 0 1.4rem; border: 0; border-radius: 999px;
     <p>Cada QR abre o cardápio já com o número da mesa preenchido. Cole o endereço do cardápio publicado (ex.: GitHub Pages), escolha quantas mesas e imprima.</p>
     <form id="f">
       <label>Endereço do cardápio<input id="url" type="url" required placeholder="https://seu-usuario.github.io/bookafe/"></label>
-      <label>Nº de mesas<input id="qtd" type="number" min="1" max="60" value="6"></label>
+      <label>Nº de mesas<input id="qtd" type="number" min="1" max="60" value="10"></label>
       <button type="submit">Gerar</button>
     </form>
     <p class="warn" id="aviso" hidden></p>
@@ -57,7 +57,9 @@ button { min-height: 2.9rem; padding: 0 1.4rem; border: 0; border-radius: 999px;
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   // sugere o endereço do cardápio a partir do endereço desta página
-  $("url").value = location.href.replace(/qr-mesas\.html.*$/, "");
+  // Endereço público do cardápio (GitHub Pages deste repositório).
+  var ENDERECO_PADRAO = "https://km097755-cpu.github.io/bookafe/";
+  $("url").value = /^https?:/.test(location.href) ? location.href.replace(/qr-mesas\.html.*$/, "") : ENDERECO_PADRAO;
 
   function qrSvg(texto, titulo) {
     var qr = qrcode(0, "M"); qr.addData(texto); qr.make();
