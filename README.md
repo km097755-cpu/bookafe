@@ -45,6 +45,8 @@ Limites para a equipe saber:
 
 ## QR Codes das mesas
 
+Quem lê o QR de uma mesa não digita o número: o cardápio mostra "Você está na mesa N", o pedido já sai com `MESA N · NOME` e, se a pessoa mudar de mesa e ler outro QR, a conta aberta passa para a mesa nova.
+
 O Bookafé tem **10 mesas** (mude `mesas: 10` na área de edição se isso mudar). Os QR apontam para `https://km097755-cpu.github.io/bookafe/?mesa=N`.
 
 1. Ligue o GitHub Pages do repositório (Settings → Pages → branch `main`, pasta `/root`). Sem isso os QR não abrem nada.

@@ -125,6 +125,7 @@ a { color: var(--accent); }
 h1 { font-size: clamp(3.2rem, 13vw, 6rem); font-weight: 800; line-height: .95; letter-spacing: -.02em; }
 .lema { margin: .4rem 0 0; font: italic 600 clamp(1.15rem, 3.6vw, 1.5rem)/1.3 var(--font-display); color: var(--accent); }
 .info { margin: 1.25rem 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .95rem; display: grid; gap: .2rem; }
+.mesaFixa { margin: 0; padding: .7rem .9rem; border-radius: .7rem; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .mesa-badge { display: inline-block; margin-top: 1rem; padding: .3rem .9rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .art { width: clamp(7rem, 26vw, 12rem); color: var(--accent); }
 
@@ -279,6 +280,7 @@ textarea { min-height: 4rem; resize: vertical; }
       <div class="opts" id="modos"></div>
     </fieldset>
     <label class="field" id="mesaField" hidden>Número da mesa<input type="number" id="mesa" inputmode="numeric" min="1"></label>
+    <p class="mesaFixa" id="mesaFixa" hidden><strong>Mesa <span id="mesaFixaN"></span></strong> · lida do QR Code da mesa</p>
     <label class="field" id="endField" hidden>Endereço de entrega<textarea id="endEntrega" autocomplete="street-address"></textarea></label>
 
     <label class="field">Observação (opcional)<textarea id="obs" placeholder="Ex.: sem açúcar, leite sem lactose"></textarea></label>
@@ -388,8 +390,13 @@ textarea { min-height: 4rem; resize: vertical; }
   // Modo de teste: ?teste=1 ou #teste no fim do endereço. #cliente volta para a visão do cliente.
   var teste = params.has("teste") || location.hash === "#teste";
   var pausado = !!LOJA.emAtualizacao && !teste; // cardápio em atualização: mostra os itens, mas não aceita pedidos
-  var mesaUrl = (params.get("mesa") || "").replace(/\D/g, "");
-  if (mesaUrl && (+mesaUrl < 1 || +mesaUrl > LOJA.mesas)) mesaUrl = "";
+  // Mesa lida do QR Code: ?mesa=5 (é o que os QR impressos usam) ou #mesa5 no fim do endereço.
+  function mesaDoEndereco() {
+    var m = /^#mesa-?(\d{1,3})$/.exec(location.hash);
+    var n = parseInt(m ? m[1] : params.get("mesa"), 10);
+    return n >= 1 && n <= LOJA.mesas ? String(n) : "";
+  }
+  var mesaUrl = mesaDoEndereco();
 
   // ---------- cabeçalho ----------
   // textos ainda "A PREENCHER" só aparecem no modo de teste, nunca para o cliente
@@ -407,7 +414,10 @@ textarea { min-height: 4rem; resize: vertical; }
     $("horario").hidden = !visivel(LOJA.horario);
     $("endereco").hidden = !visivel(LOJA.endereco);
   }
+  function mostraMesa() { $("mesaBadge").hidden = !mesaUrl; $("mesaBadge").textContent = "Você está na mesa " + mesaUrl; }
   window.addEventListener("hashchange", function () {
+    var m = mesaDoEndereco();
+    if (m && m !== mesaUrl) { mesaUrl = m; mostraMesa(); aplicarMesaQR(); }
     var novo = location.hash === "#teste" ? true : location.hash === "#cliente" ? false : teste;
     if (novo === teste) return;
     teste = novo;
@@ -421,7 +431,7 @@ textarea { min-height: 4rem; resize: vertical; }
   $("insta").textContent = "@" + LOJA.instagram;
   $("insta").href = "https://instagram.com/" + LOJA.instagram;
   $("rodape").textContent = LOJA.nome + " · " + LOJA.lema + " · Preços sujeitos a alteração";
-  if (mesaUrl) { $("mesaBadge").hidden = false; $("mesaBadge").textContent = "Você está na mesa " + mesaUrl; }
+  mostraMesa();
 
   // ---------- cardápio ----------
   function controle(it) {
@@ -535,13 +545,21 @@ textarea { min-height: 4rem; resize: vertical; }
   $("mesa").max = LOJA.mesas;
   function renderModos() {
     var on = Object.keys(MODOS).filter(function (k) { return LOJA.modos[k]; });
-    var padrao = conta ? conta.modo : (mesaUrl && LOJA.modos.mesa ? "mesa" : on[0]);
+    var padrao = conta ? conta.modo : on[0];
     if (on.indexOf(padrao) < 0) padrao = on[0];
     $("modos").innerHTML = on.map(function (k) {
       return '<label><input type="radio" name="modo" value="' + k + '"' + (k === padrao ? " checked" : "") + "> " + MODOS[k] + "</label>";
     }).join("");
     if (conta) { $("cliente").value = conta.nome; $("mesa").value = conta.mesa; $("endEntrega").value = conta.end; }
-    else if (mesaUrl) $("mesa").value = mesaUrl;
+    syncModo();
+    aplicarMesaQR();
+  }
+  // Mesa lida do QR Code: entra sozinha no pedido (o cliente não digita) e vale também para a conta aberta.
+  function aplicarMesaQR() {
+    if (!mesaUrl || !LOJA.modos.mesa) return;
+    var r = document.querySelector('input[name="modo"][value="mesa"]'); if (r) r.checked = true;
+    $("mesa").value = mesaUrl;
+    if (conta && (conta.modo !== "mesa" || conta.mesa !== mesaUrl)) { conta.modo = "mesa"; conta.mesa = mesaUrl; salvaConta(); }
     syncModo();
   }
   function modo() { var r = document.querySelector('input[name="modo"]:checked'); return r ? r.value : ""; }
@@ -553,7 +571,12 @@ textarea { min-height: 4rem; resize: vertical; }
     entrega:  { opcao: "Pagar na entrega",         pergunta: "Como vai pagar na entrega?" }
   };
   var FORMAS = { debito: "cartão de débito", credito: "cartão de crédito", dinheiro: "dinheiro" };
-  function syncModo() { $("mesaField").hidden = modo() !== "mesa"; $("endField").hidden = modo() !== "entrega"; }
+  function syncModo() {
+    var naMesa = modo() === "mesa", fixa = naMesa && !!mesaUrl; // com QR da mesa, o número não é digitado
+    $("mesaField").hidden = !naMesa || fixa; $("mesaFixa").hidden = !fixa;
+    if (fixa) { $("mesa").value = mesaUrl; $("mesaFixaN").textContent = mesaUrl; }
+    $("endField").hidden = modo() !== "entrega";
+  }
   function syncPag() { // opções de pagamento da tela "Minha conta"
     var m = conta ? conta.modo : modo(), t = ONDE[m] || ONDE.mesa, presencial = pag() === "atendente";
     $("pagLabel").textContent = t.opcao; $("formaLegend").textContent = t.pergunta;
