@@ -135,7 +135,7 @@ h1 { font-size: clamp(3.2rem, 13vw, 6rem); font-weight: 800; line-height: .95; l
 .tabs a[aria-current="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 
 /* cardápio */
-main { padding-bottom: 7rem; }
+main { padding-bottom: 10.5rem; }
 .cat { padding-block: 2rem 1rem; }
 .cat h2 { font-size: clamp(1.8rem, 6vw, 2.4rem); font-weight: 800; margin-bottom: .75rem; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.5rem; }
@@ -167,9 +167,17 @@ main { padding-bottom: 7rem; }
 footer { padding-block: 1rem 2rem; text-align: center; color: var(--muted); font-size: .85rem; }
 
 /* barra do pedido */
-.cartbar { position: fixed; z-index: 5; left: 0; right: 0; bottom: 0; padding: .75rem max(16px, env(safe-area-inset-right, 0px)) calc(.75rem + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, var(--bg) 65%, transparent); }
+.cartbar { display: grid; gap: .5rem; position: fixed; z-index: 5; left: 0; right: 0; bottom: 0; padding: .75rem max(16px, env(safe-area-inset-right, 0px)) calc(.75rem + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(to top, var(--bg) 65%, transparent); }
 .cartbar button { width: min(100%, 36rem); margin-inline: auto; display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 3.6rem; padding: 0 1.4rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 1.05rem; box-shadow: var(--shadow); }
 .cartbar .count { font-weight: 500; opacity: .9; }
+.cartbar .contaBtn { min-height: 3rem; background: var(--surface); color: var(--fg); border: 1.5px solid var(--accent); font-size: 1rem; }
+#contaPedidos { display: grid; gap: 1rem; }
+.ped h3 { display: flex; justify-content: space-between; gap: 1rem; margin: 0 0 .2rem; font: 700 .95rem var(--font-body); }
+.ped h3 span { color: var(--muted); font-weight: 400; }
+.ped ul { list-style: none; margin: 0; padding: 0; }
+.ped li { display: flex; justify-content: space-between; gap: 1rem; padding-block: .35rem; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.ped li span:last-child { white-space: nowrap; font-weight: 700; }
+.linkBtn { display: grid; place-items: center; text-decoration: none; }
 
 /* janela do pedido */
 dialog { width: min(100% - 24px, 32rem); max-height: calc(100dvh - 24px); padding: 0; border: 0; border-radius: 1.25rem; background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
@@ -252,16 +260,17 @@ textarea { min-height: 4rem; resize: vertical; }
 <footer><div class="wrap" id="rodape"></div></footer>
 
 <div class="cartbar" id="cartbar" hidden>
-  <button type="button" id="openCart"><span>Ver pedido <span class="count" id="count"></span></span><span id="barTotal"></span></button>
+  <button type="button" class="contaBtn" id="openConta" hidden><span>Minha conta <span class="count" id="contaCount"></span></span><span id="contaBarTotal"></span></button>
+  <button type="button" class="cartBtn" id="openCart" hidden><span>Ver pedido <span class="count" id="count"></span></span><span id="barTotal"></span></button>
 </div>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
-  <!-- passo 1: revisar pedido -->
+  <!-- passo 1: revisar e enviar o pedido (sem pagamento: paga-se ao fechar a conta) -->
   <form class="sheet" id="stepCart" novalidate>
     <header><h2 id="dlgTitle">Seu pedido</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
     <ul class="lines" id="lines"></ul>
     <p class="empty" id="empty" hidden>Nenhum item ainda. Escolha no cardápio.</p>
-    <div class="total"><span>Total</span><strong id="total"></strong></div>
+    <div class="total"><span>Total deste pedido</span><strong id="total"></strong></div>
 
     <label class="field">Seu nome<input type="text" id="cliente" autocomplete="given-name" maxlength="40" required aria-describedby="nomeDica"></label>
     <p class="note" id="nomeDica">Assim a equipe sabe de quem é cada pedido, mesmo com várias pessoas pedindo na mesma mesa.</p>
@@ -272,7 +281,32 @@ textarea { min-height: 4rem; resize: vertical; }
     <label class="field" id="mesaField" hidden>Número da mesa<input type="number" id="mesa" inputmode="numeric" min="1"></label>
     <label class="field" id="endField" hidden>Endereço de entrega<textarea id="endEntrega" autocomplete="street-address"></textarea></label>
 
-    <fieldset><legend>Pagamento</legend>
+    <label class="field">Observação (opcional)<textarea id="obs" placeholder="Ex.: sem açúcar, leite sem lactose"></textarea></label>
+
+    <p class="note">Você não paga agora. O pedido entra na sua conta e o pagamento é no final, em <strong>Minha conta</strong>.</p>
+    <p class="err" id="err" role="alert"></p>
+    <button type="submit" class="primary" id="goNext">Enviar pedido</button>
+  </form>
+
+  <!-- passo 2: pedido enviado -->
+  <div class="sheet center" id="stepSent" hidden>
+    <header><h2>Pedido enviado</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
+    <p class="big quem" style="font-size:1.6rem;margin:0"></p>
+    <p id="sentInfo" style="margin:0;font-weight:700"></p>
+    <p class="note">O pagamento é no final: quando terminar, abra <strong>Minha conta</strong> e feche a conta. Se o WhatsApp não abriu sozinho, toque no botão abaixo.</p>
+    <a class="primary linkBtn" id="waPedido" href="#" target="_blank" rel="noopener">Abrir WhatsApp</a>
+    <button type="button" class="ghost" data-close>Voltar ao cardápio</button>
+    <button type="button" class="ghost" id="sentConta">Ver minha conta</button>
+  </div>
+
+  <!-- passo 3: minha conta (tudo o que foi pedido) e fechamento -->
+  <form class="sheet" id="stepConta" hidden novalidate>
+    <header><h2>Minha conta</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
+    <p class="note" style="margin:0"><strong class="quem"></strong> · Conta <strong class="contaId"></strong></p>
+    <div id="contaPedidos"></div>
+    <div class="total"><span>Total da conta</span><strong id="contaTotal"></strong></div>
+
+    <fieldset><legend>Como quer pagar?</legend>
       <div class="opts">
         <label><input type="radio" name="pag" value="pix" checked> Pix agora</label>
         <label><input type="radio" name="pag" value="atendente"> <span id="pagLabel">Chamar atendente na mesa</span></label>
@@ -287,34 +321,34 @@ textarea { min-height: 4rem; resize: vertical; }
     </fieldset>
     <label class="field" id="trocoField" hidden>Precisa de troco? Para quanto? (opcional)<input type="text" id="troco" inputmode="decimal" placeholder="Ex.: 50"></label>
 
-    <label class="field">Observação (opcional)<textarea id="obs" placeholder="Ex.: sem açúcar, leite sem lactose"></textarea></label>
-
-    <p class="err" id="err" role="alert"></p>
-    <button type="submit" class="primary" id="goNext">Continuar</button>
+    <p class="err" id="errConta" role="alert"></p>
+    <button type="submit" class="primary" id="goFechar">Fechar a conta</button>
+    <button type="button" class="ghost" data-close>Ainda não: pedir mais</button>
   </form>
 
-  <!-- passo 2: pagar com Pix -->
+  <!-- passo 4: pagar a conta com Pix -->
   <div class="sheet" id="stepPix" hidden>
     <header><h2>Pague com Pix</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
     <p class="warn" id="pixWarn" hidden></p>
-    <div class="center"><div class="big" id="pixTotal"></div><p class="note"><strong class="quem"></strong> · Pedido <strong id="pixId"></strong></p></div>
+    <div class="center"><div class="big" id="pixTotal"></div><p class="note"><strong class="quem"></strong> · Conta <strong class="contaId"></strong></p></div>
     <div class="qr" id="qr"></div>
     <p class="note center">Abra o app do seu banco, escolha <strong>Pix → Ler QR Code</strong>. O valor já vem preenchido.</p>
     <div class="pixcode" id="pixCode"></div>
     <button type="button" class="ghost" id="copy">Copiar código Pix (copia e cola)</button>
-    <button type="button" class="primary" id="paid">Já paguei: enviar pedido no WhatsApp</button>
+    <button type="button" class="primary" id="paid">Já paguei: avisar o Bookafé no WhatsApp</button>
     <p class="note center">O Bookafé confere o pagamento no banco e confirma pelo WhatsApp.</p>
-    <button type="button" class="ghost" id="back">Voltar ao pedido</button>
+    <button type="button" class="ghost" id="back">Voltar à conta</button>
   </div>
 
-  <!-- passo 3: enviado -->
+  <!-- passo 5: fechamento enviado -->
   <div class="sheet center" id="stepDone" hidden>
-    <header><h2>Pedido enviado</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
+    <header><h2>Fechamento enviado</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
     <p class="big quem" style="font-size:1.6rem;margin:0"></p>
+    <p class="big" id="doneTotal" style="margin:0"></p>
     <p id="doneInfo" style="margin:0;font-weight:700"></p>
     <p class="note">Se o WhatsApp não abriu sozinho, toque no botão abaixo.</p>
-    <a class="primary" id="waAgain" href="#" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Abrir WhatsApp</a>
-    <button type="button" class="ghost" id="newOrder">Fazer outro pedido</button>
+    <a class="primary linkBtn" id="waAgain" href="#" target="_blank" rel="noopener">Abrir WhatsApp</a>
+    <button type="button" class="ghost" data-close>Concluir</button>
   </div>
 </dialog>
 
@@ -356,8 +390,6 @@ textarea { min-height: 4rem; resize: vertical; }
   var pausado = !!LOJA.emAtualizacao && !teste; // cardápio em atualização: mostra os itens, mas não aceita pedidos
   var mesaUrl = (params.get("mesa") || "").replace(/\D/g, "");
   if (mesaUrl && (+mesaUrl < 1 || +mesaUrl > LOJA.mesas)) mesaUrl = "";
-  var pedidoId = null;
-  var waUrl = "#";
 
   // ---------- cabeçalho ----------
   // textos ainda "A PREENCHER" só aparecem no modo de teste, nunca para o cliente
@@ -436,9 +468,14 @@ textarea { min-height: 4rem; resize: vertical; }
 
   function refreshBar() {
     var n = itensDoPedido().reduce(function (s, l) { return s + l.q; }, 0);
-    $("cartbar").hidden = n === 0;
+    var np = conta ? conta.pedidos.length : 0;
+    $("openCart").hidden = n === 0;
+    $("openConta").hidden = np === 0;
+    $("cartbar").hidden = pausado || (n === 0 && np === 0);
     $("count").textContent = "(" + n + (n === 1 ? " item)" : " itens)");
     $("barTotal").textContent = money(totalCents());
+    $("contaCount").textContent = "(" + np + (np === 1 ? " pedido)" : " pedidos)");
+    $("contaBarTotal").textContent = money(contaTotal());
   }
 
   function change(id, d) {
@@ -485,16 +522,26 @@ textarea { min-height: 4rem; resize: vertical; }
     secs.forEach(function (s) { if (s) io.observe(s); });
   }
 
+  // ---------- conta do cliente: tudo o que já foi pedido; o pagamento é só no fechamento ----------
+  var CONTA_KEY = "bookafe-conta", CONTA_VALE = 12 * 60 * 60 * 1000; // conta esquecida no aparelho some depois de 12 h
+  var conta = store.get(CONTA_KEY);
+  if (!conta || !Array.isArray(conta.pedidos) || !conta.pedidos.length || conta.fechada || Date.now() - conta.aberta > CONTA_VALE) conta = null;
+  function salvaConta() { store.set(CONTA_KEY, conta); }
+  function contaTotal() { return conta ? conta.pedidos.reduce(function (s, p) { return s + p.total; }, 0) : 0; }
+  function wa(texto) { return "https://wa.me/" + String(LOJA.whatsapp).replace(/\D/g, "") + "?text=" + encodeURIComponent(texto); }
+
   // ---------- janela do pedido ----------
   var MODOS = { mesa: "Na mesa", retirada: "Retirar no balcão", entrega: "Entrega" };
   $("mesa").max = LOJA.mesas;
   function renderModos() {
     var on = Object.keys(MODOS).filter(function (k) { return LOJA.modos[k]; });
-    var padrao = mesaUrl && LOJA.modos.mesa ? "mesa" : on[0];
+    var padrao = conta ? conta.modo : (mesaUrl && LOJA.modos.mesa ? "mesa" : on[0]);
+    if (on.indexOf(padrao) < 0) padrao = on[0];
     $("modos").innerHTML = on.map(function (k) {
       return '<label><input type="radio" name="modo" value="' + k + '"' + (k === padrao ? " checked" : "") + "> " + MODOS[k] + "</label>";
     }).join("");
-    if (mesaUrl) $("mesa").value = mesaUrl;
+    if (conta) { $("cliente").value = conta.nome; $("mesa").value = conta.mesa; $("endEntrega").value = conta.end; }
+    else if (mesaUrl) $("mesa").value = mesaUrl;
     syncModo();
   }
   function modo() { var r = document.querySelector('input[name="modo"]:checked'); return r ? r.value : ""; }
@@ -506,23 +553,21 @@ textarea { min-height: 4rem; resize: vertical; }
     entrega:  { opcao: "Pagar na entrega",         pergunta: "Como vai pagar na entrega?" }
   };
   var FORMAS = { debito: "cartão de débito", credito: "cartão de crédito", dinheiro: "dinheiro" };
-  function syncModo() {
-    $("mesaField").hidden = modo() !== "mesa"; $("endField").hidden = modo() !== "entrega";
-    var t = ONDE[modo()] || ONDE.mesa;
+  function syncModo() { $("mesaField").hidden = modo() !== "mesa"; $("endField").hidden = modo() !== "entrega"; }
+  function syncPag() { // opções de pagamento da tela "Minha conta"
+    var m = conta ? conta.modo : modo(), t = ONDE[m] || ONDE.mesa, presencial = pag() === "atendente";
     $("pagLabel").textContent = t.opcao; $("formaLegend").textContent = t.pergunta;
-    syncPag();
-  }
-  function syncPag() {
-    var presencial = pag() === "atendente";
     $("formaField").hidden = !presencial;
     $("trocoField").hidden = !(presencial && forma() === "dinheiro");
-    $("goNext").textContent = !presencial ? "Continuar para o Pix" :
-      (modo() === "mesa" ? "Enviar pedido e chamar atendente" : "Enviar pedido no WhatsApp");
+    $("goFechar").textContent = !presencial ? "Fechar a conta e pagar com Pix" :
+      (m === "mesa" ? "Fechar a conta e chamar atendente" : "Fechar a conta");
   }
   // troco: aceita "50", "50,00" ou "R$ 50"; devolve centavos (0 = não informou)
   function trocoCents() { var v = parseFloat($("troco").value.replace(/[^\d,.]/g, "").replace(",", ".")); return v > 0 ? Math.round(v * 100) : 0; }
   $("modos").addEventListener("change", syncModo);
   $("stepCart").addEventListener("input", function () { $("err").textContent = ""; });
+  $("stepConta").addEventListener("input", function () { $("errConta").textContent = ""; });
+  document.querySelectorAll('input[name="pag"], input[name="forma"]').forEach(function (r) { r.addEventListener("change", syncPag); });
 
   function renderLines() {
     var ls = itensDoPedido();
@@ -535,18 +580,13 @@ textarea { min-height: 4rem; resize: vertical; }
     }).join("");
     $("total").textContent = money(totalCents());
     $("goNext").disabled = ls.length === 0;
-    syncPag();
   }
-  document.querySelectorAll('input[name="pag"], input[name="forma"]').forEach(function (r) { r.addEventListener("change", syncPag); });
 
-  function show(step) { ["stepCart", "stepPix", "stepDone"].forEach(function (s) { $(s).hidden = s !== step; }); $("dlg").scrollTop = 0; }
+  var PASSOS = ["stepCart", "stepSent", "stepConta", "stepPix", "stepDone"];
+  function show(step) { PASSOS.forEach(function (s) { $(s).hidden = s !== step; }); $("dlg").scrollTop = 0; }
+  function abrir(step) { show(step); if (!$("dlg").open) $("dlg").showModal(); }
 
-  $("openCart").addEventListener("click", function () {
-    $("err").textContent = "";
-    renderLines(); show("stepCart");
-    var salvo = store.get("bookafe-cliente"); if (salvo && !$("cliente").value) $("cliente").value = salvo;
-    $("dlg").showModal();
-  });
+  $("openCart").addEventListener("click", function () { $("err").textContent = ""; renderLines(); abrir("stepCart"); });
 
   function validar() {
     if (!itensDoPedido().length) return "Escolha pelo menos um item.";
@@ -554,21 +594,73 @@ textarea { min-height: 4rem; resize: vertical; }
     var nm = parseInt($("mesa").value, 10);
     if (modo() === "mesa" && !(nm >= 1 && nm <= LOJA.mesas)) { $("mesa").focus(); return "Digite o número da mesa (de 1 a " + LOJA.mesas + ")."; }
     if (modo() === "entrega" && !$("endEntrega").value.trim()) { $("endEntrega").focus(); return "Digite o endereço de entrega."; }
-    if (pag() === "atendente") {
-      if (!forma()) return "Escolha: cartão de débito, cartão de crédito ou dinheiro.";
-      if (forma() === "dinheiro" && trocoCents() && trocoCents() < totalCents()) { $("troco").focus(); return "O valor para troco é menor que o total do pedido."; }
-    }
     return "";
   }
 
+  // Enviar pedido: entra na conta e vai para o WhatsApp. Não há pagamento aqui.
   $("stepCart").addEventListener("submit", function (e) {
     e.preventDefault();
     var erro = validar();
     $("err").textContent = erro;
     if (erro) return;
-    store.set("bookafe-cliente", $("cliente").value.trim());
-    pedidoId = "BKF" + Date.now().toString(36).toUpperCase().slice(-6);
-    if (pag() === "pix") { abrirPix(); } else { enviar(); }
+    if (!conta) conta = { id: "BKF" + Date.now().toString(36).toUpperCase().slice(-6), aberta: Date.now(), pedidos: [] };
+    conta.nome = nomeCliente(); conta.modo = modo();
+    conta.mesa = modo() === "mesa" ? String(parseInt($("mesa").value, 10)) : "";
+    conta.end = modo() === "entrega" ? $("endEntrega").value.trim() : "";
+    var ped = {
+      n: conta.pedidos.length + 1,
+      hora: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      obs: $("obs").value.trim(),
+      itens: itensDoPedido().map(function (l) { return { nome: l.it.nome, q: l.q, cents: l.it.cents }; }),
+      total: totalCents()
+    };
+    conta.pedidos.push(ped); salvaConta();
+    var url = wa(mensagemPedido(ped));
+    $("waPedido").href = url;
+    window.open(url, "_blank", "noopener");
+    cart = {}; store.set(KEY, cart); $("obs").value = "";
+    renderMenu(); refreshBar(); spy();
+    mostraQuem();
+    $("sentInfo").textContent = "Pedido " + ped.n + " anotado: " + money(ped.total) + ". Sua conta está em " + money(contaTotal()) + ".";
+    show("stepSent");
+  });
+
+  // ---------- minha conta ----------
+  function renderConta() {
+    mostraQuem();
+    $("contaPedidos").innerHTML = conta.pedidos.map(function (p) {
+      return '<section class="ped"><h3>Pedido ' + p.n + " <span>" + esc(p.hora) + "</span></h3><ul>" +
+        p.itens.map(function (i) { return "<li><span>" + i.q + " × " + esc(i.nome) + "</span><span>" + money(i.q * i.cents) + "</span></li>"; }).join("") +
+        "</ul></section>";
+    }).join("");
+    $("contaTotal").textContent = money(contaTotal());
+    $("errConta").textContent = "";
+    syncPag();
+  }
+  function abrirConta() { if (!conta) return; renderConta(); abrir("stepConta"); }
+  $("openConta").addEventListener("click", abrirConta);
+  $("sentConta").addEventListener("click", abrirConta);
+
+  $("stepConta").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var erro = "";
+    if (pag() === "atendente") {
+      if (!forma()) erro = "Escolha: cartão de débito, cartão de crédito ou dinheiro.";
+      else if (forma() === "dinheiro" && trocoCents() && trocoCents() < contaTotal()) { $("troco").focus(); erro = "O valor para troco é menor que o total da conta."; }
+    }
+    $("errConta").textContent = erro;
+    if (erro) return;
+    if (pag() === "pix") { abrirPix(); } else { enviarFechamento(); }
+  });
+
+  // Fechou a janela depois de enviar o fechamento: a conta termina e o aparelho fica pronto para a próxima pessoa.
+  $("dlg").addEventListener("close", function () {
+    if (!conta || !conta.fechada) return;
+    conta = null; salvaConta();
+    $("troco").value = ""; $("cliente").value = "";
+    document.querySelector('input[name="pag"][value="pix"]').checked = true;
+    document.querySelectorAll('input[name="forma"]').forEach(function (r) { r.checked = false; });
+    refreshBar();
   });
 
   // ---------- Pix (BR Code, padrão do Banco Central) ----------
@@ -594,10 +686,9 @@ textarea { min-height: 4rem; resize: vertical; }
 
   var pixAtual = "";
   function abrirPix() {
-    var tot = totalCents();
-    pixAtual = pixPayload(tot, pedidoId);
+    var tot = contaTotal();
+    pixAtual = pixPayload(tot, conta.id);
     $("pixTotal").textContent = money(tot);
-    $("pixId").textContent = pedidoId;
     mostraQuem();
     $("pixCode").textContent = pixAtual;
     var aviso = pendente(LOJA.pix.chave) ? "Chave Pix ainda não configurada: este QR é só demonstração e não funciona no banco." :
@@ -621,23 +712,26 @@ textarea { min-height: 4rem; resize: vertical; }
       try { document.execCommand("copy"); ok(); } catch (e) { $("copy").textContent = "Selecione o código acima e copie"; }
     }
   });
-  $("back").addEventListener("click", function () { show("stepCart"); });
-  $("paid").addEventListener("click", enviar);
+  $("back").addEventListener("click", function () { show("stepConta"); });
+  $("paid").addEventListener("click", enviarFechamento);
 
-  // ---------- quem pediu ----------
+  // ---------- quem pediu (da conta, se já existe; senão, do formulário) ----------
   function nomeCliente() { return $("cliente").value.trim().replace(/\s+/g, " "); }
   function quem() {
-    var m = modo(), n = nomeCliente();
-    if (m === "mesa") return "Mesa " + $("mesa").value + " · " + n;
+    var m = conta ? conta.modo : modo(), n = conta ? conta.nome : nomeCliente(), mesa = conta ? conta.mesa : $("mesa").value;
+    if (m === "mesa") return "Mesa " + mesa + " · " + n;
     if (m === "retirada") return n + " · Retirada no balcão";
     return n + " · Entrega";
   }
-  function mostraQuem() { document.querySelectorAll(".quem").forEach(function (el) { el.textContent = quem(); }); }
+  function mostraQuem() {
+    document.querySelectorAll(".quem").forEach(function (el) { el.textContent = quem(); });
+    document.querySelectorAll(".contaId").forEach(function (el) { el.textContent = conta ? conta.id : ""; });
+  }
 
   // ---------- pagamento presencial (atendente, balcão ou entrega) ----------
   function textoPresencial(paraLoja) {
-    var m = modo(), f = forma(), tot = totalCents(), t = "";
-    if (m === "mesa") t = paraLoja ? "*IR ATÉ A MESA " + $("mesa").value + "* para receber em " + FORMAS[f] : "O atendente vai até a mesa " + $("mesa").value + " para receber em " + FORMAS[f];
+    var m = conta.modo, f = forma(), tot = contaTotal(), t = "";
+    if (m === "mesa") t = paraLoja ? "*IR ATÉ A MESA " + conta.mesa + "* para receber em " + FORMAS[f] : "O atendente vai até a mesa " + conta.mesa + " para receber em " + FORMAS[f];
     else if (m === "retirada") t = (paraLoja ? "no balcão, em " : "Pagamento no balcão, em ") + FORMAS[f];
     else t = (paraLoja ? "na entrega, em " : "Pagamento na entrega, em ") + FORMAS[f];
     if (paraLoja && f !== "dinheiro") t += " (levar a maquininha)";
@@ -645,45 +739,47 @@ textarea { min-height: 4rem; resize: vertical; }
     return t + (paraLoja ? "" : ".");
   }
 
-  // ---------- mensagem para o WhatsApp ----------
-  function mensagem() {
-    var ls = itensDoPedido(), tot = totalCents();
-    var m = modo(), linhas = [];
-    linhas.push("*" + quem().toUpperCase() + "*");
-    linhas.push("Pedido " + pedidoId + " · " + LOJA.nome);
-    if (m === "entrega") linhas.push("Endereço: " + $("endEntrega").value.trim());
+  // ---------- mensagens para o WhatsApp ----------
+  function linhasItens(itens) { return itens.map(function (i) { return i.q + "x " + i.nome + " (" + money(i.cents) + ") = " + money(i.q * i.cents); }); }
+
+  function mensagemPedido(ped) { // um pedido: a equipe prepara; ninguém paga ainda
+    var linhas = ["*" + quem().toUpperCase() + "*", "Pedido " + ped.n + " da conta " + conta.id + " · " + LOJA.nome];
+    if (conta.modo === "entrega") linhas.push("Endereço: " + conta.end);
     linhas.push("");
-    ls.forEach(function (l) { linhas.push(l.q + "x " + l.it.nome + " (" + money(l.it.cents) + ") = " + money(l.sub)); });
-    linhas.push("*Total: " + money(tot) + "*");
-    linhas.push("");
-    if (pag() === "pix") {
-      linhas.push("Pagamento: Pix de " + money(tot) + " — cliente informou que JÁ PAGOU.");
-      linhas.push("Identificador do Pix: " + pedidoId + " (conferir no app do banco antes de preparar)");
-    } else {
-      linhas.push("Pagamento: " + textoPresencial(true));
-    }
-    var obs = $("obs").value.trim();
-    if (obs) { linhas.push(""); linhas.push("Obs.: " + obs); }
+    linhas = linhas.concat(linhasItens(ped.itens));
+    linhas.push("*Total deste pedido: " + money(ped.total) + "*");
+    linhas.push("Conta até agora: " + money(contaTotal()) + " (pagamento no fechamento da conta)");
+    if (ped.obs) { linhas.push(""); linhas.push("Obs.: " + ped.obs); }
     return linhas.join("\n");
   }
 
-  function enviar() {
-    waUrl = "https://wa.me/" + String(LOJA.whatsapp).replace(/\D/g, "") + "?text=" + encodeURIComponent(mensagem());
-    $("waAgain").href = waUrl;
-    window.open(waUrl, "_blank", "noopener");
-    mostraQuem();
-    $("doneInfo").textContent = pag() === "pix" ? "O Bookafé confere o Pix e confirma pelo WhatsApp." : textoPresencial(false);
-    show("stepDone");
+  function mensagemFechamento() { // fechamento: tudo o que foi pedido, o total e como o cliente vai pagar
+    var tot = contaTotal();
+    var linhas = ["*FECHAR CONTA · " + quem().toUpperCase() + "*", "Conta " + conta.id + " · " + LOJA.nome];
+    conta.pedidos.forEach(function (p) {
+      linhas.push(""); linhas.push("Pedido " + p.n + " (" + p.hora + ")");
+      linhas = linhas.concat(linhasItens(p.itens));
+    });
+    linhas.push(""); linhas.push("*Total da conta: " + money(tot) + "*"); linhas.push("");
+    if (pag() === "pix") {
+      linhas.push("Pagamento: Pix de " + money(tot) + " — cliente informou que JÁ PAGOU.");
+      linhas.push("Identificador do Pix: " + conta.id + " (conferir no app do banco)");
+    } else {
+      linhas.push("Pagamento: " + textoPresencial(true));
+    }
+    return linhas.join("\n");
   }
 
-  $("newOrder").addEventListener("click", function () {
-    cart = {}; store.set(KEY, cart);
-    $("obs").value = "";
-    $("troco").value = "";
-    $("cliente").value = ""; store.set("bookafe-cliente", ""); // próxima pessoa da mesa digita o próprio nome
-    renderMenu(); refreshBar(); spy();
-    $("dlg").close();
-  });
+  function enviarFechamento() {
+    var url = wa(mensagemFechamento());
+    $("waAgain").href = url;
+    window.open(url, "_blank", "noopener");
+    mostraQuem();
+    $("doneTotal").textContent = money(contaTotal());
+    $("doneInfo").textContent = pag() === "pix" ? "O Bookafé confere o Pix e confirma pelo WhatsApp." : textoPresencial(false);
+    conta.fechada = true; salvaConta(); // a conta termina quando esta janela for fechada
+    show("stepDone");
+  }
 
   // ---------- início ----------
   aplicarModo(); renderMenu(); renderModos(); refreshBar(); spy();
