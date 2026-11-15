@@ -22,7 +22,11 @@ Abra `index.html` no Bloco de Notas. Logo no começo tem a **ÁREA DE EDIÇÃO**
 2. `pix.chave`: sua chave Pix. Confira também `pix.nome` e `pix.cidade`.
 3. `endereco`, `horario`, `livros`: os textos da loja.
 4. `CARDAPIO`: categorias, itens e preços (preço com ponto: `9.50`). Item que acabou: `esgotado: true`.
-5. Quando estiver tudo certo, troque `rascunho: true` por `rascunho: false`.
+5. Quando estiver tudo certo, troque `emAtualizacao: true` por `emAtualizacao: false`.
+
+### Modo "em atualização"
+
+Enquanto `emAtualizacao: true`, o cliente vê o aviso **"Cardápio em atualização"** com o link do Instagram, e **os pedidos ficam pausados** (os botões de adicionar somem). Para a equipe testar os pedidos nesse período, abra o endereço com `?teste=1` no final, por exemplo `https://km097755-cpu.github.io/bookafe/?teste=1&mesa=3`.
 
 ## Como o pagamento funciona (importante)
 

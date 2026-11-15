@@ -13,13 +13,16 @@
    - Texto sempre entre aspas: "assim".
    - Preço com PONTO, sem R$: 9.50 (nove e cinquenta).
    - Acabou um item? Coloque  esgotado: true  nele.
-   - Quando o cardápio for o de verdade, mude  rascunho: true  para  false
-     (some a faixa amarela de "cardápio de exemplo").
+   - emAtualizacao: true  = aparece o aviso "Cardápio em atualização" e os
+     pedidos ficam PAUSADOS. Quando os produtos e preços forem os de verdade,
+     mude para  false  e os pedidos voltam a funcionar.
+   - Para testar os pedidos com o aviso ligado, abra o endereço com ?teste=1
+     no final (ex.: index.html?teste=1).
    ===================================================================== */
 var LOJA = {
   nome: "Bookafé",
   lema: "Livros que levam à fé",
-  rascunho: true,
+  emAtualizacao: true,
 
   // WhatsApp que recebe os pedidos: 55 + DDD + número, só dígitos.
   whatsapp: "5500000000000",
@@ -112,7 +115,8 @@ a { color: var(--accent); }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 [hidden] { display: none !important; }
 
-.draft { background: var(--warn-bg); color: var(--warn-fg); font-size: .9rem; text-align: center; padding: .5rem 16px; }
+.draft { background: var(--warn-bg); color: var(--warn-fg); font-size: .95rem; text-align: center; padding: .6rem 16px; text-wrap: balance; }
+.draft a { color: inherit; font-weight: 700; }
 
 /* topo */
 .hero { padding-block: 2.5rem 2rem; }
@@ -214,7 +218,7 @@ textarea { min-height: 4rem; resize: vertical; }
 </head>
 <body>
 
-<div class="draft" id="draft" hidden>Cardápio de exemplo: itens, preços e chave Pix são fictícios. Não pague.</div>
+<div class="draft" id="draft" role="status" hidden></div>
 
 <header class="hero">
   <div class="wrap">
@@ -347,17 +351,28 @@ textarea { min-height: 4rem; resize: vertical; }
   var cart = store.get(KEY) || {};
   Object.keys(cart).forEach(function (id) { if (!produtos[id] || produtos[id].esgotado) delete cart[id]; });
   var params = new URLSearchParams(location.search);
+  var teste = params.has("teste");
+  var pausado = !!LOJA.emAtualizacao && !teste; // cardápio em atualização: mostra os itens, mas não aceita pedidos
   var mesaUrl = (params.get("mesa") || "").replace(/\D/g, "");
   if (mesaUrl && (+mesaUrl < 1 || +mesaUrl > LOJA.mesas)) mesaUrl = "";
   var pedidoId = null;
   var waUrl = "#";
 
   // ---------- cabeçalho ----------
-  $("draft").hidden = !LOJA.rascunho;
+  $("draft").hidden = !LOJA.emAtualizacao;
+  if (pausado) {
+    $("draft").innerHTML = "<strong>Cardápio em atualização.</strong> Os itens e preços abaixo são ilustrativos e os pedidos estão pausados. " +
+      'Veja as novidades no Instagram <a href="https://instagram.com/' + esc(LOJA.instagram) + '" target="_blank" rel="noopener">@' + esc(LOJA.instagram) + "</a>.";
+    cart = {};
+  } else if (LOJA.emAtualizacao) {
+    $("draft").textContent = "Modo de teste: itens, preços, WhatsApp e chave Pix são de exemplo. Não pague.";
+  }
   $("nome").textContent = LOJA.nome;
   $("lema").textContent = LOJA.lema;
-  $("horario").textContent = LOJA.horario;
-  $("endereco").textContent = LOJA.endereco;
+  // textos ainda "A PREENCHER" só aparecem no modo de teste, nunca para o cliente
+  var visivel = function (s) { return !pendente(s) || teste; };
+  $("horario").textContent = LOJA.horario; $("horario").hidden = !visivel(LOJA.horario);
+  $("endereco").textContent = LOJA.endereco; $("endereco").hidden = !visivel(LOJA.endereco);
   $("insta").textContent = "@" + LOJA.instagram;
   $("insta").href = "https://instagram.com/" + LOJA.instagram;
   $("rodape").textContent = LOJA.nome + " · " + LOJA.lema + " · Preços sujeitos a alteração";
@@ -365,6 +380,7 @@ textarea { min-height: 4rem; resize: vertical; }
 
   // ---------- cardápio ----------
   function controle(it) {
+    if (pausado) return "";
     if (it.esgotado) return '<span class="soldout">Esgotado</span>';
     var q = cart[it.id] || 0;
     if (!q) return '<button type="button" class="add" data-add="' + it.id + '" aria-label="Adicionar ' + esc(it.nome) + '">Adicionar</button>';
@@ -387,13 +403,13 @@ textarea { min-height: 4rem; resize: vertical; }
       });
       html += "</ul></section>";
     });
-    html += '<section class="books" aria-labelledby="h-livros" id="cat-livros">' +
+    if (visivel(LOJA.livros)) html += '<section class="books" aria-labelledby="h-livros" id="cat-livros">' +
       '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 14c9-3 18-2 26 4v36c-8-6-17-7-26-4zM58 14c-9-3-18-2-26 4v36c8-6 17-7 26-4z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/></svg>' +
       '<div><h2 id="h-livros">Cantinho dos livros</h2><p>' + esc(LOJA.livros) + '</p></div></section>';
     $("menu").innerHTML = html;
 
     $("tabs").innerHTML = CARDAPIO.map(function (cat) { return '<a href="#' + cat.id + '">' + esc(cat.categoria) + '</a>'; }).join("") +
-      '<a href="#cat-livros">Livros</a>';
+      (visivel(LOJA.livros) ? '<a href="#cat-livros">Livros</a>' : "");
   }
 
   function refreshItem(id) { var el = $("c-" + id); if (el) el.innerHTML = controle(produtos[id]); }
@@ -570,7 +586,7 @@ textarea { min-height: 4rem; resize: vertical; }
     mostraQuem();
     $("pixCode").textContent = pixAtual;
     var aviso = pendente(LOJA.pix.chave) ? "Chave Pix ainda não configurada: este QR é só demonstração e não funciona no banco." :
-      (LOJA.rascunho ? "Cardápio em modo de exemplo. Não pague." : "");
+      (LOJA.emAtualizacao ? "Modo de teste. Não pague." : "");
     $("pixWarn").hidden = !aviso; $("pixWarn").textContent = aviso;
     try {
       var qr = qrcode(0, "M"); qr.addData(pixAtual); qr.make();
