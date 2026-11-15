@@ -13,8 +13,8 @@
    - Texto sempre entre aspas: "assim".
    - Preço com PONTO, sem R$: 9.50 (nove e cinquenta).
    - Acabou um item? Coloque  esgotado: true  nele.
-   - emAtualizacao: true  = aparece o aviso "Cardápio em atualização" e os
-     pedidos ficam PAUSADOS. Quando os produtos e preços forem os de verdade,
+   - emAtualizacao: true  = aparece o aviso "Cardápio em atualização", os
+     preços ficam ESCONDIDOS e os pedidos ficam PAUSADOS. Quando os produtos e preços forem os de verdade,
      mude para  false  e os pedidos voltam a funcionar.
    - Para testar os pedidos com o aviso ligado, abra o endereço com ?teste=1
      no final (ex.: index.html?teste=1).
@@ -361,7 +361,7 @@ textarea { min-height: 4rem; resize: vertical; }
   // ---------- cabeçalho ----------
   $("draft").hidden = !LOJA.emAtualizacao;
   if (pausado) {
-    $("draft").innerHTML = "<strong>Cardápio em atualização.</strong> Os itens e preços abaixo são ilustrativos e os pedidos estão pausados. " +
+    $("draft").innerHTML = "<strong>Cardápio em atualização.</strong> Os itens abaixo são ilustrativos e os pedidos estão pausados. " +
       'Veja as novidades no Instagram <a href="https://instagram.com/' + esc(LOJA.instagram) + '" target="_blank" rel="noopener">@' + esc(LOJA.instagram) + "</a>.";
     cart = {};
   } else if (LOJA.emAtualizacao) {
@@ -397,7 +397,7 @@ textarea { min-height: 4rem; resize: vertical; }
         var tags = (it.tags || []).map(function (t) { return '<span class="t-' + slug(t) + '">' + esc(t) + '</span>'; });
         if (it.tamanho) tags.unshift('<span>' + esc(it.tamanho) + '</span>');
         html += '<li class="item' + (it.esgotado ? " out" : "") + '">' +
-          '<div class="row"><h3>' + esc(it.nome) + '</h3><span class="dots" aria-hidden="true"></span><span class="price">' + money(it.cents) + '</span></div>' +
+          '<div class="row"><h3>' + esc(it.nome) + '</h3>' + (pausado ? "" : '<span class="dots" aria-hidden="true"></span><span class="price">' + money(it.cents) + '</span>') + '</div>' +
           '<div><p class="desc">' + esc(it.desc || "") + '</p>' + (tags.length ? '<div class="meta">' + tags.join("") + '</div>' : "") + '</div>' +
           '<div class="ctrl" id="c-' + it.id + '">' + controle(it) + '</div></li>';
       });

@@ -26,7 +26,7 @@ Abra `index.html` no Bloco de Notas. Logo no começo tem a **ÁREA DE EDIÇÃO**
 
 ### Modo "em atualização"
 
-Enquanto `emAtualizacao: true`, o cliente vê o aviso **"Cardápio em atualização"** com o link do Instagram, e **os pedidos ficam pausados** (os botões de adicionar somem). Para a equipe testar os pedidos nesse período, abra o endereço com `?teste=1` no final, por exemplo `https://km097755-cpu.github.io/bookafe/?teste=1&mesa=3`.
+Enquanto `emAtualizacao: true`, o cliente vê o aviso **"Cardápio em atualização"** com o link do Instagram, **os preços ficam escondidos** e **os pedidos ficam pausados** (os botões de adicionar somem). Para a equipe testar os pedidos nesse período, abra o endereço com `?teste=1` no final, por exemplo `https://km097755-cpu.github.io/bookafe/?teste=1&mesa=3`.
 
 ## Como o pagamento funciona (importante)
 
