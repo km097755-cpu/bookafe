@@ -17,7 +17,7 @@
      preços ficam ESCONDIDOS e os pedidos ficam PAUSADOS. Quando os produtos e preços forem os de verdade,
      mude para  false  e os pedidos voltam a funcionar.
    - Para testar os pedidos com o aviso ligado, abra o endereço com ?teste=1
-     no final (ex.: index.html?teste=1).
+     ou #teste no final (ex.: index.html?teste=1).
    ===================================================================== */
 var LOJA = {
   nome: "Bookafé",
@@ -129,7 +129,7 @@ h1 { font-size: clamp(3.2rem, 13vw, 6rem); font-weight: 800; line-height: .95; l
 .art { width: clamp(7rem, 26vw, 12rem); color: var(--accent); }
 
 /* abas */
-.tabs { position: sticky; top: 0; z-index: 4; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-block: 1px solid var(--line); }
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-block: 1px solid var(--line); }
 .tabs .wrap { display: flex; gap: .5rem; overflow-x: auto; padding-block: .6rem; scrollbar-width: none; }
 .tabs a { flex: none; padding: .45rem 1rem; border-radius: 999px; border: 1px solid var(--line); color: var(--fg); text-decoration: none; font-weight: 500; font-size: .95rem; white-space: nowrap; }
 .tabs a[aria-current="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
@@ -351,7 +351,8 @@ textarea { min-height: 4rem; resize: vertical; }
   var cart = store.get(KEY) || {};
   Object.keys(cart).forEach(function (id) { if (!produtos[id] || produtos[id].esgotado) delete cart[id]; });
   var params = new URLSearchParams(location.search);
-  var teste = params.has("teste");
+  // Modo de teste: ?teste=1 ou #teste no fim do endereço. #cliente volta para a visão do cliente.
+  var teste = params.has("teste") || location.hash === "#teste";
   var pausado = !!LOJA.emAtualizacao && !teste; // cardápio em atualização: mostra os itens, mas não aceita pedidos
   var mesaUrl = (params.get("mesa") || "").replace(/\D/g, "");
   if (mesaUrl && (+mesaUrl < 1 || +mesaUrl > LOJA.mesas)) mesaUrl = "";
@@ -359,20 +360,32 @@ textarea { min-height: 4rem; resize: vertical; }
   var waUrl = "#";
 
   // ---------- cabeçalho ----------
-  $("draft").hidden = !LOJA.emAtualizacao;
-  if (pausado) {
-    $("draft").innerHTML = "<strong>Cardápio em atualização.</strong> Os itens abaixo são ilustrativos e os pedidos estão pausados. " +
-      'Veja as novidades no Instagram <a href="https://instagram.com/' + esc(LOJA.instagram) + '" target="_blank" rel="noopener">@' + esc(LOJA.instagram) + "</a>.";
-    cart = {};
-  } else if (LOJA.emAtualizacao) {
-    $("draft").textContent = "Modo de teste: itens, preços, WhatsApp e chave Pix são de exemplo. Não pague.";
-  }
-  $("nome").textContent = LOJA.nome;
-  $("lema").textContent = LOJA.lema;
   // textos ainda "A PREENCHER" só aparecem no modo de teste, nunca para o cliente
   var visivel = function (s) { return !pendente(s) || teste; };
-  $("horario").textContent = LOJA.horario; $("horario").hidden = !visivel(LOJA.horario);
-  $("endereco").textContent = LOJA.endereco; $("endereco").hidden = !visivel(LOJA.endereco);
+  function aplicarModo() { // aviso do topo e o que muda entre "cliente" e "teste"
+    pausado = !!LOJA.emAtualizacao && !teste;
+    $("draft").hidden = !LOJA.emAtualizacao;
+    if (pausado) {
+      $("draft").innerHTML = "<strong>Cardápio em atualização.</strong> Os itens abaixo são ilustrativos e os pedidos estão pausados. " +
+        'Veja as novidades no Instagram <a href="https://instagram.com/' + esc(LOJA.instagram) + '" target="_blank" rel="noopener">@' + esc(LOJA.instagram) + "</a>.";
+      cart = {};
+    } else if (LOJA.emAtualizacao) {
+      $("draft").textContent = "Modo de teste: itens, preços, WhatsApp e chave Pix são de exemplo. Não pague.";
+    }
+    $("horario").hidden = !visivel(LOJA.horario);
+    $("endereco").hidden = !visivel(LOJA.endereco);
+  }
+  window.addEventListener("hashchange", function () {
+    var novo = location.hash === "#teste" ? true : location.hash === "#cliente" ? false : teste;
+    if (novo === teste) return;
+    teste = novo;
+    if ($("dlg").open) $("dlg").close();
+    aplicarModo(); renderMenu(); refreshBar(); spy();
+  });
+  $("nome").textContent = LOJA.nome;
+  $("lema").textContent = LOJA.lema;
+  $("horario").textContent = LOJA.horario;
+  $("endereco").textContent = LOJA.endereco;
   $("insta").textContent = "@" + LOJA.instagram;
   $("insta").href = "https://instagram.com/" + LOJA.instagram;
   $("rodape").textContent = LOJA.nome + " · " + LOJA.lema + " · Preços sujeitos a alteração";
@@ -455,11 +468,13 @@ textarea { min-height: 4rem; resize: vertical; }
   }
 
   // abas: marca a categoria visível
+  var io = null;
   function spy() {
+    if (io) io.disconnect();
     var links = $("tabs").querySelectorAll("a");
     var secs = Array.prototype.map.call(links, function (l) { return document.querySelector(l.getAttribute("href")); });
     if (!("IntersectionObserver" in window)) return;
-    var io = new IntersectionObserver(function (ents) {
+    io = new IntersectionObserver(function (ents) {
       ents.forEach(function (en) {
         if (!en.isIntersecting) return;
         links.forEach(function (l) { l.setAttribute("aria-current", l.getAttribute("href") === "#" + en.target.id ? "true" : "false"); });
@@ -671,7 +686,7 @@ textarea { min-height: 4rem; resize: vertical; }
   });
 
   // ---------- início ----------
-  renderMenu(); renderModos(); refreshBar(); spy();
+  aplicarModo(); renderMenu(); renderModos(); refreshBar(); spy();
 })();
 </script>
 
