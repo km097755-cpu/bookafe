@@ -259,7 +259,8 @@ textarea { min-height: 4rem; resize: vertical; }
     <p class="empty" id="empty" hidden>Nenhum item ainda. Escolha no cardápio.</p>
     <div class="total"><span>Total</span><strong id="total"></strong></div>
 
-    <label class="field">Seu nome<input type="text" id="cliente" autocomplete="given-name" required></label>
+    <label class="field">Seu nome<input type="text" id="cliente" autocomplete="given-name" maxlength="40" required aria-describedby="nomeDica"></label>
+    <p class="note" id="nomeDica">Assim a equipe sabe de quem é cada pedido, mesmo com várias pessoas pedindo na mesma mesa.</p>
 
     <fieldset><legend>Como vai receber?</legend>
       <div class="opts" id="modos"></div>
@@ -284,7 +285,7 @@ textarea { min-height: 4rem; resize: vertical; }
   <div class="sheet" id="stepPix" hidden>
     <header><h2>Pague com Pix</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
     <p class="warn" id="pixWarn" hidden></p>
-    <div class="center"><div class="big" id="pixTotal"></div><p class="note">Pedido <strong id="pixId"></strong></p></div>
+    <div class="center"><div class="big" id="pixTotal"></div><p class="note"><strong class="quem"></strong> · Pedido <strong id="pixId"></strong></p></div>
     <div class="qr" id="qr"></div>
     <p class="note center">Abra o app do seu banco, escolha <strong>Pix → Ler QR Code</strong>. O valor já vem preenchido.</p>
     <div class="pixcode" id="pixCode"></div>
@@ -297,6 +298,7 @@ textarea { min-height: 4rem; resize: vertical; }
   <!-- passo 3: enviado -->
   <div class="sheet center" id="stepDone" hidden>
     <header><h2>Pedido enviado</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
+    <p class="big quem" style="font-size:1.6rem;margin:0"></p>
     <p>Se o WhatsApp não abriu sozinho, toque no botão abaixo.</p>
     <a class="primary" id="waAgain" href="#" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Abrir WhatsApp</a>
     <button type="button" class="ghost" id="newOrder">Fazer outro pedido</button>
@@ -487,7 +489,7 @@ textarea { min-height: 4rem; resize: vertical; }
 
   function validar() {
     if (!itensDoPedido().length) return "Escolha pelo menos um item.";
-    if (!$("cliente").value.trim()) { $("cliente").focus(); return "Digite seu nome."; }
+    if ($("cliente").value.trim().length < 2) { $("cliente").focus(); return "Digite seu nome."; }
     var nm = parseInt($("mesa").value, 10);
     if (modo() === "mesa" && !(nm >= 1 && nm <= LOJA.mesas)) { $("mesa").focus(); return "Digite o número da mesa (de 1 a " + LOJA.mesas + ")."; }
     if (modo() === "entrega" && !$("endEntrega").value.trim()) { $("endEntrega").focus(); return "Digite o endereço de entrega."; }
@@ -531,6 +533,7 @@ textarea { min-height: 4rem; resize: vertical; }
     pixAtual = pixPayload(tot, pedidoId);
     $("pixTotal").textContent = money(tot);
     $("pixId").textContent = pedidoId;
+    mostraQuem();
     $("pixCode").textContent = pixAtual;
     var aviso = pendente(LOJA.pix.chave) ? "Chave Pix ainda não configurada: este QR é só demonstração e não funciona no banco." :
       (LOJA.rascunho ? "Cardápio em modo de exemplo. Não pague." : "");
@@ -556,15 +559,23 @@ textarea { min-height: 4rem; resize: vertical; }
   $("back").addEventListener("click", function () { show("stepCart"); });
   $("paid").addEventListener("click", enviar);
 
+  // ---------- quem pediu ----------
+  function nomeCliente() { return $("cliente").value.trim().replace(/\s+/g, " "); }
+  function quem() {
+    var m = modo(), n = nomeCliente();
+    if (m === "mesa") return "Mesa " + $("mesa").value + " · " + n;
+    if (m === "retirada") return n + " · Retirada no balcão";
+    return n + " · Entrega";
+  }
+  function mostraQuem() { document.querySelectorAll(".quem").forEach(function (el) { el.textContent = quem(); }); }
+
   // ---------- mensagem para o WhatsApp ----------
   function mensagem() {
     var ls = itensDoPedido(), tot = totalCents();
     var m = modo(), linhas = [];
-    linhas.push("*Pedido " + pedidoId + " · " + LOJA.nome + "*");
-    linhas.push("Cliente: " + $("cliente").value.trim());
-    if (m === "mesa") linhas.push("Mesa: " + $("mesa").value);
-    if (m === "retirada") linhas.push("Retirada no balcão");
-    if (m === "entrega") linhas.push("Entrega: " + $("endEntrega").value.trim());
+    linhas.push("*" + quem().toUpperCase() + "*");
+    linhas.push("Pedido " + pedidoId + " · " + LOJA.nome);
+    if (m === "entrega") linhas.push("Endereço: " + $("endEntrega").value.trim());
     linhas.push("");
     ls.forEach(function (l) { linhas.push(l.q + "x " + l.it.nome + " (" + money(l.it.cents) + ") = " + money(l.sub)); });
     linhas.push("*Total: " + money(tot) + "*");
@@ -584,12 +595,14 @@ textarea { min-height: 4rem; resize: vertical; }
     waUrl = "https://wa.me/" + String(LOJA.whatsapp).replace(/\D/g, "") + "?text=" + encodeURIComponent(mensagem());
     $("waAgain").href = waUrl;
     window.open(waUrl, "_blank", "noopener");
+    mostraQuem();
     show("stepDone");
   }
 
   $("newOrder").addEventListener("click", function () {
     cart = {}; store.set(KEY, cart);
     $("obs").value = "";
+    $("cliente").value = ""; store.set("bookafe-cliente", ""); // próxima pessoa da mesa digita o próprio nome
     renderMenu(); refreshBar(); spy();
     $("dlg").close();
   });
