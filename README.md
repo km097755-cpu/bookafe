@@ -30,6 +30,10 @@ Abra `index.html` no Bloco de Notas. Logo no começo tem a **ÁREA DE EDIÇÃO**
 - Depois de pagar, o cliente toca em **"Já paguei"** e o pedido vai para o WhatsApp com o total e o identificador.
 - **A página não tem como saber sozinha se o Pix caiu.** Antes de preparar, confira no app do banco se entrou um Pix com aquele valor e identificador. Confirmação automática exige um intermediador de pagamento (Mercado Pago, Asaas, PagSeguro etc.) e um pequeno servidor; fica como próximo passo.
 
+### Pagar para o atendente (cartão ou dinheiro)
+
+Quem não quer pagar com Pix escolhe **"Chamar atendente na mesa"** e marca **cartão de débito, cartão de crédito ou dinheiro** (no dinheiro, pode dizer para quanto precisa de troco). O WhatsApp recebe, por exemplo: `Pagamento: IR ATÉ A MESA 7 para receber em cartão de débito (levar a maquininha)`. Em pedidos de retirada, a opção vira "Pagar no balcão".
+
 ## QR Codes das mesas
 
 O Bookafé tem **10 mesas** (mude `mesas: 10` na área de edição se isso mudar). Os QR apontam para `https://km097755-cpu.github.io/bookafe/?mesa=N`.

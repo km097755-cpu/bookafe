@@ -271,9 +271,17 @@ textarea { min-height: 4rem; resize: vertical; }
     <fieldset><legend>Pagamento</legend>
       <div class="opts">
         <label><input type="radio" name="pag" value="pix" checked> Pix agora</label>
-        <label><input type="radio" name="pag" value="depois"> Na hora (dinheiro ou cartão)</label>
+        <label><input type="radio" name="pag" value="atendente"> <span id="pagLabel">Chamar atendente na mesa</span></label>
       </div>
     </fieldset>
+    <fieldset id="formaField" hidden><legend id="formaLegend">Como vai pagar ao atendente?</legend>
+      <div class="opts">
+        <label><input type="radio" name="forma" value="debito"> Cartão de débito</label>
+        <label><input type="radio" name="forma" value="credito"> Cartão de crédito</label>
+        <label><input type="radio" name="forma" value="dinheiro"> Dinheiro</label>
+      </div>
+    </fieldset>
+    <label class="field" id="trocoField" hidden>Precisa de troco? Para quanto? (opcional)<input type="text" id="troco" inputmode="decimal" placeholder="Ex.: 50"></label>
 
     <label class="field">Observação (opcional)<textarea id="obs" placeholder="Ex.: sem açúcar, leite sem lactose"></textarea></label>
 
@@ -299,7 +307,8 @@ textarea { min-height: 4rem; resize: vertical; }
   <div class="sheet center" id="stepDone" hidden>
     <header><h2>Pedido enviado</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
     <p class="big quem" style="font-size:1.6rem;margin:0"></p>
-    <p>Se o WhatsApp não abriu sozinho, toque no botão abaixo.</p>
+    <p id="doneInfo" style="margin:0;font-weight:700"></p>
+    <p class="note">Se o WhatsApp não abriu sozinho, toque no botão abaixo.</p>
     <a class="primary" id="waAgain" href="#" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Abrir WhatsApp</a>
     <button type="button" class="ghost" id="newOrder">Fazer outro pedido</button>
   </div>
@@ -459,7 +468,28 @@ textarea { min-height: 4rem; resize: vertical; }
   }
   function modo() { var r = document.querySelector('input[name="modo"]:checked'); return r ? r.value : ""; }
   function pag() { return document.querySelector('input[name="pag"]:checked').value; }
-  function syncModo() { $("mesaField").hidden = modo() !== "mesa"; $("endField").hidden = modo() !== "entrega"; }
+  function forma() { var r = document.querySelector('input[name="forma"]:checked'); return r ? r.value : ""; }
+  var ONDE = { // textos do pagamento presencial, conforme o jeito de receber
+    mesa:     { opcao: "Chamar atendente na mesa", pergunta: "Como vai pagar ao atendente?" },
+    retirada: { opcao: "Pagar no balcão",          pergunta: "Como vai pagar no balcão?" },
+    entrega:  { opcao: "Pagar na entrega",         pergunta: "Como vai pagar na entrega?" }
+  };
+  var FORMAS = { debito: "cartão de débito", credito: "cartão de crédito", dinheiro: "dinheiro" };
+  function syncModo() {
+    $("mesaField").hidden = modo() !== "mesa"; $("endField").hidden = modo() !== "entrega";
+    var t = ONDE[modo()] || ONDE.mesa;
+    $("pagLabel").textContent = t.opcao; $("formaLegend").textContent = t.pergunta;
+    syncPag();
+  }
+  function syncPag() {
+    var presencial = pag() === "atendente";
+    $("formaField").hidden = !presencial;
+    $("trocoField").hidden = !(presencial && forma() === "dinheiro");
+    $("goNext").textContent = !presencial ? "Continuar para o Pix" :
+      (modo() === "mesa" ? "Enviar pedido e chamar atendente" : "Enviar pedido no WhatsApp");
+  }
+  // troco: aceita "50", "50,00" ou "R$ 50"; devolve centavos (0 = não informou)
+  function trocoCents() { var v = parseFloat($("troco").value.replace(/[^\d,.]/g, "").replace(",", ".")); return v > 0 ? Math.round(v * 100) : 0; }
   $("modos").addEventListener("change", syncModo);
   $("stepCart").addEventListener("input", function () { $("err").textContent = ""; });
 
@@ -474,9 +504,9 @@ textarea { min-height: 4rem; resize: vertical; }
     }).join("");
     $("total").textContent = money(totalCents());
     $("goNext").disabled = ls.length === 0;
-    $("goNext").textContent = pag() === "pix" ? "Continuar para o Pix" : "Enviar pedido no WhatsApp";
+    syncPag();
   }
-  document.querySelectorAll('input[name="pag"]').forEach(function (r) { r.addEventListener("change", renderLines); });
+  document.querySelectorAll('input[name="pag"], input[name="forma"]').forEach(function (r) { r.addEventListener("change", syncPag); });
 
   function show(step) { ["stepCart", "stepPix", "stepDone"].forEach(function (s) { $(s).hidden = s !== step; }); $("dlg").scrollTop = 0; }
 
@@ -493,6 +523,10 @@ textarea { min-height: 4rem; resize: vertical; }
     var nm = parseInt($("mesa").value, 10);
     if (modo() === "mesa" && !(nm >= 1 && nm <= LOJA.mesas)) { $("mesa").focus(); return "Digite o número da mesa (de 1 a " + LOJA.mesas + ")."; }
     if (modo() === "entrega" && !$("endEntrega").value.trim()) { $("endEntrega").focus(); return "Digite o endereço de entrega."; }
+    if (pag() === "atendente") {
+      if (!forma()) return "Escolha: cartão de débito, cartão de crédito ou dinheiro.";
+      if (forma() === "dinheiro" && trocoCents() && trocoCents() < totalCents()) { $("troco").focus(); return "O valor para troco é menor que o total do pedido."; }
+    }
     return "";
   }
 
@@ -569,6 +603,17 @@ textarea { min-height: 4rem; resize: vertical; }
   }
   function mostraQuem() { document.querySelectorAll(".quem").forEach(function (el) { el.textContent = quem(); }); }
 
+  // ---------- pagamento presencial (atendente, balcão ou entrega) ----------
+  function textoPresencial(paraLoja) {
+    var m = modo(), f = forma(), tot = totalCents(), t = "";
+    if (m === "mesa") t = paraLoja ? "*IR ATÉ A MESA " + $("mesa").value + "* para receber em " + FORMAS[f] : "O atendente vai até a mesa " + $("mesa").value + " para receber em " + FORMAS[f];
+    else if (m === "retirada") t = (paraLoja ? "no balcão, em " : "Pagamento no balcão, em ") + FORMAS[f];
+    else t = (paraLoja ? "na entrega, em " : "Pagamento na entrega, em ") + FORMAS[f];
+    if (paraLoja && f !== "dinheiro") t += " (levar a maquininha)";
+    if (f === "dinheiro" && trocoCents()) t += trocoCents() === tot ? " (valor exato, sem troco)" : ". Troco para " + money(trocoCents()) + (paraLoja ? " (levar " + money(trocoCents() - tot) + " de troco)" : "");
+    return t + (paraLoja ? "" : ".");
+  }
+
   // ---------- mensagem para o WhatsApp ----------
   function mensagem() {
     var ls = itensDoPedido(), tot = totalCents();
@@ -584,7 +629,7 @@ textarea { min-height: 4rem; resize: vertical; }
       linhas.push("Pagamento: Pix de " + money(tot) + " — cliente informou que JÁ PAGOU.");
       linhas.push("Identificador do Pix: " + pedidoId + " (conferir no app do banco antes de preparar)");
     } else {
-      linhas.push("Pagamento: na hora (dinheiro ou cartão)");
+      linhas.push("Pagamento: " + textoPresencial(true));
     }
     var obs = $("obs").value.trim();
     if (obs) { linhas.push(""); linhas.push("Obs.: " + obs); }
@@ -596,12 +641,14 @@ textarea { min-height: 4rem; resize: vertical; }
     $("waAgain").href = waUrl;
     window.open(waUrl, "_blank", "noopener");
     mostraQuem();
+    $("doneInfo").textContent = pag() === "pix" ? "O Bookafé confere o Pix e confirma pelo WhatsApp." : textoPresencial(false);
     show("stepDone");
   }
 
   $("newOrder").addEventListener("click", function () {
     cart = {}; store.set(KEY, cart);
     $("obs").value = "";
+    $("troco").value = "";
     $("cliente").value = ""; store.set("bookafe-cliente", ""); // próxima pessoa da mesa digita o próprio nome
     renderMenu(); refreshBar(); spy();
     $("dlg").close();
