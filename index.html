@@ -179,6 +179,12 @@ footer { padding-block: 1rem 2rem; text-align: center; color: var(--muted); font
 .ped li { display: flex; justify-content: space-between; gap: 1rem; padding-block: .35rem; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .ped li span:last-child { white-space: nowrap; font-weight: 700; }
 .linkBtn { display: grid; place-items: center; text-decoration: none; }
+.grupo, .pessoas { display: grid; gap: .75rem; }
+.pessoa { display: grid; gap: .55rem; padding: .8rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--bg); }
+.pessoa label { display: grid; gap: .25rem; min-width: 0; font-size: .85rem; font-weight: 500; }
+.pessoa input, .pessoa select { background: var(--surface); }
+.pessoaTop { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: end; }
+.pessoaRow { display: grid; grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr); gap: .5rem; }
 
 /* janela do pedido */
 dialog { width: min(100% - 24px, 32rem); max-height: calc(100dvh - 24px); padding: 0; border: 0; border-radius: 1.25rem; background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
@@ -199,7 +205,7 @@ dialog::backdrop { background: rgba(20, 12, 6, .55); }
 fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: .5rem; }
 legend { font-weight: 700; margin-bottom: .4rem; padding: 0; }
 label.field { display: grid; gap: .3rem; font-weight: 500; font-size: .95rem; }
-input[type="text"], input[type="number"], textarea { width: 100%; min-height: 2.9rem; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--bg); color: var(--fg); font: inherit; }
+input[type="text"], input[type="number"], textarea, select { width: 100%; min-height: 2.9rem; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--bg); color: var(--fg); font: inherit; }
 textarea { min-height: 4rem; resize: vertical; }
 .opts { display: flex; flex-wrap: wrap; gap: .5rem; }
 .opts label { flex: 1 1 8rem; display: flex; align-items: center; gap: .5rem; min-height: 2.9rem; padding: .5rem .8rem; border: 1px solid var(--line); border-radius: .7rem; cursor: pointer; font-size: .95rem; }
@@ -308,20 +314,38 @@ textarea { min-height: 4rem; resize: vertical; }
     <div id="contaPedidos"></div>
     <div class="total"><span>Total da conta</span><strong id="contaTotal"></strong></div>
 
-    <fieldset><legend>Como quer pagar?</legend>
+    <fieldset><legend>Quem paga?</legend>
       <div class="opts">
-        <label><input type="radio" name="pag" value="pix" checked> Pix agora</label>
-        <label><input type="radio" name="pag" value="atendente"> <span id="pagLabel">Chamar atendente na mesa</span></label>
+        <label><input type="radio" name="div" value="um" checked> Uma pessoa paga tudo</label>
+        <label><input type="radio" name="div" value="varios"> Dividir a conta</label>
       </div>
     </fieldset>
-    <fieldset id="formaField" hidden><legend id="formaLegend">Como vai pagar ao atendente?</legend>
-      <div class="opts">
-        <label><input type="radio" name="forma" value="debito"> Cartão de débito</label>
-        <label><input type="radio" name="forma" value="credito"> Cartão de crédito</label>
-        <label><input type="radio" name="forma" value="dinheiro"> Dinheiro</label>
-      </div>
-    </fieldset>
-    <label class="field" id="trocoField" hidden>Precisa de troco? Para quanto? (opcional)<input type="text" id="troco" inputmode="decimal" placeholder="Ex.: 50"></label>
+
+    <!-- uma pessoa paga tudo -->
+    <div class="grupo" id="pagUm">
+      <fieldset><legend>Como quer pagar?</legend>
+        <div class="opts">
+          <label><input type="radio" name="pag" value="pix" checked> Pix agora</label>
+          <label><input type="radio" name="pag" value="atendente"> <span id="pagLabel">Chamar atendente na mesa</span></label>
+        </div>
+      </fieldset>
+      <fieldset id="formaField" hidden><legend id="formaLegend">Como vai pagar ao atendente?</legend>
+        <div class="opts">
+          <label><input type="radio" name="forma" value="debito"> Cartão de débito</label>
+          <label><input type="radio" name="forma" value="credito"> Cartão de crédito</label>
+          <label><input type="radio" name="forma" value="dinheiro"> Dinheiro</label>
+        </div>
+      </fieldset>
+      <label class="field" id="trocoField" hidden>Precisa de troco? Para quanto? (opcional)<input type="text" id="troco" inputmode="decimal" placeholder="Ex.: 50"></label>
+    </div>
+
+    <!-- conta dividida: cada pessoa com seu valor e sua forma de pagamento -->
+    <div class="grupo" id="pagVarios" hidden>
+      <p class="note">Cada pessoa tem o seu valor e a sua forma de pagamento. Quem não mudar o valor divide por igual o que falta.</p>
+      <div class="pessoas" id="pessoas"></div>
+      <button type="button" class="ghost" id="addPessoa">+ Adicionar pessoa</button>
+      <p class="note" id="divResumo" role="status"></p>
+    </div>
 
     <p class="err" id="errConta" role="alert"></p>
     <button type="submit" class="primary" id="goFechar">Fechar a conta</button>
@@ -332,7 +356,7 @@ textarea { min-height: 4rem; resize: vertical; }
   <div class="sheet" id="stepPix" hidden>
     <header><h2>Pague com Pix</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></header>
     <p class="warn" id="pixWarn" hidden></p>
-    <div class="center"><div class="big" id="pixTotal"></div><p class="note"><strong class="quem"></strong> · Conta <strong class="contaId"></strong></p></div>
+    <div class="center"><p id="pixQuem" style="margin:0;font-weight:700" hidden></p><div class="big" id="pixTotal"></div><p class="note"><strong class="quem"></strong> · Conta <strong class="contaId"></strong></p></div>
     <div class="qr" id="qr"></div>
     <p class="note center">Abra o app do seu banco, escolha <strong>Pix → Ler QR Code</strong>. O valor já vem preenchido.</p>
     <div class="pixcode" id="pixCode"></div>
@@ -582,11 +606,13 @@ textarea { min-height: 4rem; resize: vertical; }
     $("pagLabel").textContent = t.opcao; $("formaLegend").textContent = t.pergunta;
     $("formaField").hidden = !presencial;
     $("trocoField").hidden = !(presencial && forma() === "dinheiro");
-    $("goFechar").textContent = !presencial ? "Fechar a conta e pagar com Pix" :
+    var temPix = dividindo() ? partes.some(function (p) { return p.forma === "pix"; }) : !presencial;
+    $("goFechar").textContent = temPix ? "Fechar a conta e pagar com Pix" :
       (m === "mesa" ? "Fechar a conta e chamar atendente" : "Fechar a conta");
   }
   // troco: aceita "50", "50,00" ou "R$ 50"; devolve centavos (0 = não informou)
-  function trocoCents() { var v = parseFloat($("troco").value.replace(/[^\d,.]/g, "").replace(",", ".")); return v > 0 ? Math.round(v * 100) : 0; }
+  function lerCents(txt) { var v = parseFloat(String(txt).replace(/[^\d,.]/g, "").replace(",", ".")); return v > 0 ? Math.round(v * 100) : 0; }
+  function trocoCents() { return lerCents($("troco").value); }
   $("modos").addEventListener("change", syncModo);
   $("stepCart").addEventListener("input", function () { $("err").textContent = ""; });
   $("stepConta").addEventListener("input", function () { $("errConta").textContent = ""; });
@@ -658,7 +684,7 @@ textarea { min-height: 4rem; resize: vertical; }
     }).join("");
     $("contaTotal").textContent = money(contaTotal());
     $("errConta").textContent = "";
-    syncPag();
+    syncDiv();
   }
   function abrirConta() { if (!conta) return; renderConta(); abrir("stepConta"); }
   $("openConta").addEventListener("click", abrirConta);
@@ -667,24 +693,135 @@ textarea { min-height: 4rem; resize: vertical; }
   $("stepConta").addEventListener("submit", function (e) {
     e.preventDefault();
     var erro = "";
-    if (pag() === "atendente") {
+    if (dividindo()) erro = validarDivisao();
+    else if (pag() === "atendente") {
       if (!forma()) erro = "Escolha: cartão de débito, cartão de crédito ou dinheiro.";
       else if (forma() === "dinheiro" && trocoCents() && trocoCents() < contaTotal()) { $("troco").focus(); erro = "O valor para troco é menor que o total da conta."; }
     }
     $("errConta").textContent = erro;
     if (erro) return;
-    if (pag() === "pix") { abrirPix(); } else { enviarFechamento(); }
+    // fila de Pix: um por pessoa que escolheu Pix (ou um só, da conta inteira)
+    pixFila = dividindo() ? partes.map(function (p, i) { return p.forma === "pix" ? { nome: nomeParte(p, i), valor: p.valor, txid: conta.id + (i + 1) } : null; }).filter(Boolean) :
+      (pag() === "pix" ? [{ nome: conta.nome, valor: contaTotal(), txid: conta.id }] : []);
+    pixPos = 0;
+    if (pixFila.length) { abrirPix(); } else { enviarFechamento(); }
   });
 
   // Fechou a janela depois de enviar o fechamento: a conta termina e o aparelho fica pronto para a próxima pessoa.
   $("dlg").addEventListener("close", function () {
     if (!conta || !conta.fechada) return;
     conta = null; salvaConta();
+    partes = []; document.querySelector('input[name="div"][value="um"]').checked = true; syncDiv();
     $("troco").value = ""; $("cliente").value = "";
     document.querySelector('input[name="pag"][value="pix"]').checked = true;
     document.querySelectorAll('input[name="forma"]').forEach(function (r) { r.checked = false; });
     refreshBar();
   });
+
+  // ---------- dividir a conta: cada pessoa com seu valor e sua forma de pagamento ----------
+  var partes = []; // [{ nome, valor (centavos), manual (digitou o valor?), forma, troco }]
+  var FORMAS_DIV = { pix: "Pix", debito: "Cartão de débito", credito: "Cartão de crédito", dinheiro: "Dinheiro" };
+  var MAX_PESSOAS = 8;
+  function dividindo() { return document.querySelector('input[name="div"]:checked').value === "varios"; }
+  function fmtCampo(c) { return (c / 100).toFixed(2).replace(".", ","); }
+  function nomeParte(p, i) { return p.nome.trim().replace(/\s+/g, " ") || "Pessoa " + (i + 1); }
+  function somaPartes() { return partes.reduce(function (s, p) { return s + p.valor; }, 0); }
+  function juntar(l) { return l.length < 2 ? l.join("") : l.slice(0, -1).join(", ") + " e " + l[l.length - 1]; }
+  // Quem não digitou valor divide por igual o que falta (os centavos que sobram vão para os primeiros).
+  function repartir() {
+    var fixo = 0, livres = [];
+    partes.forEach(function (p) { if (p.manual) fixo += p.valor; else livres.push(p); });
+    var resto = Math.max(0, contaTotal() - fixo), base = livres.length ? Math.floor(resto / livres.length) : 0, sobra = livres.length ? resto - base * livres.length : 0;
+    livres.forEach(function (p, i) { p.valor = base + (i < sobra ? 1 : 0); });
+  }
+  function renderPartes() {
+    repartir();
+    $("pessoas").innerHTML = partes.map(function (p, i) {
+      var opts = Object.keys(FORMAS_DIV).map(function (k) { return '<option value="' + k + '"' + (k === p.forma ? " selected" : "") + ">" + FORMAS_DIV[k] + "</option>"; }).join("");
+      return '<div class="pessoa" data-i="' + i + '">' +
+        '<div class="pessoaTop"><label>Nome<input type="text" id="pn' + i + '" data-f="nome" maxlength="30" placeholder="Pessoa ' + (i + 1) + '" value="' + esc(p.nome) + '"></label>' +
+        (partes.length > 2 ? '<button type="button" class="x" data-rm aria-label="Tirar ' + esc(nomeParte(p, i)) + ' da divisão">×</button>' : "") + "</div>" +
+        '<div class="pessoaRow"><label>Valor (R$)<input type="text" id="pv' + i + '" data-f="valor" inputmode="decimal" value="' + fmtCampo(p.valor) + '"></label>' +
+        '<label>Forma de pagamento<select id="pf' + i + '" data-f="forma">' + opts + "</select></label></div>" +
+        '<label data-troco' + (p.forma === "dinheiro" ? "" : " hidden") + '>Troco para quanto? (opcional)<input type="text" id="pt' + i + '" data-f="troco" inputmode="decimal" placeholder="Ex.: 50" value="' + esc(p.troco) + '"></label>' +
+        "</div>";
+    }).join("");
+    resumoPartes();
+  }
+  function resumoPartes() {
+    repartir();
+    $("pessoas").querySelectorAll(".pessoa").forEach(function (el, i) {
+      var p = partes[i], inp = el.querySelector('[data-f="valor"]');
+      if (!p) return; // a lista está sendo redesenhada (pessoa tirada): ignora o cartão antigo
+      if (document.activeElement !== inp) inp.value = fmtCampo(p.valor); // não mexe no campo que a pessoa está digitando
+      el.querySelector("[data-troco]").hidden = p.forma !== "dinheiro";
+    });
+    var dif = contaTotal() - somaPartes();
+    $("divResumo").textContent = dif === 0 ? "A divisão fecha: " + money(contaTotal()) + " entre " + partes.length + " pessoas." :
+      dif > 0 ? "Faltam " + money(dif) + " para fechar a conta." : "Os valores passam " + money(-dif) + " do total da conta.";
+    $("divResumo").className = dif === 0 ? "note" : "err";
+    $("addPessoa").hidden = partes.length >= MAX_PESSOAS;
+    syncPag();
+  }
+  function syncDiv() {
+    var d = dividindo();
+    $("pagUm").hidden = d; $("pagVarios").hidden = !d;
+    if (d && conta) {
+      if (partes.length < 2) partes = [{ nome: conta.nome, valor: 0, manual: false, forma: "pix", troco: "" }, { nome: "", valor: 0, manual: false, forma: "pix", troco: "" }];
+      renderPartes();
+    } else syncPag();
+  }
+  document.querySelectorAll('input[name="div"]').forEach(function (r) { r.addEventListener("change", syncDiv); });
+  $("pessoas").addEventListener("input", function (e) {
+    var el = e.target.closest(".pessoa"), f = e.target.getAttribute("data-f"); if (!el || !f) return;
+    var p = partes[+el.getAttribute("data-i")], v = e.target.value;
+    if (f === "nome") p.nome = v;
+    if (f === "troco") p.troco = v;
+    if (f === "forma") p.forma = v;
+    if (f === "valor") { p.manual = v.trim() !== ""; if (p.manual) p.valor = lerCents(v); } // campo vazio volta a dividir por igual
+    resumoPartes();
+  });
+  $("pessoas").addEventListener("focusout", resumoPartes);
+  $("pessoas").addEventListener("click", function (e) {
+    var rm = e.target.closest("[data-rm]"); if (!rm) return;
+    partes.splice(+rm.closest(".pessoa").getAttribute("data-i"), 1);
+    renderPartes(); $("addPessoa").focus();
+  });
+  $("addPessoa").addEventListener("click", function () {
+    if (partes.length >= MAX_PESSOAS) return;
+    partes.push({ nome: "", valor: 0, manual: false, forma: "pix", troco: "" });
+    renderPartes(); $("pn" + (partes.length - 1)).focus();
+  });
+  function validarDivisao() {
+    repartir();
+    if (partes.length < 2) return "Para dividir, coloque pelo menos duas pessoas.";
+    var dif = contaTotal() - somaPartes();
+    if (dif > 0) return "Faltam " + money(dif) + " para fechar a conta.";
+    if (dif < 0) return "Os valores passam " + money(-dif) + " do total da conta.";
+    for (var i = 0; i < partes.length; i++) {
+      var p = partes[i], t = lerCents(p.troco);
+      if (p.valor <= 0) return nomeParte(p, i) + " ficou sem valor: ajuste os valores ou tire essa pessoa da divisão.";
+      if (p.forma === "dinheiro" && t && t < p.valor) return "O troco de " + nomeParte(p, i) + " é para um valor menor que a parte dessa pessoa.";
+    }
+    return "";
+  }
+  // Texto de cada pessoa e da chamada do atendente, para a loja (paraLoja) ou para o cliente.
+  function textoParte(p, i, paraLoja) {
+    if (p.forma === "pix") return paraLoja ? "Pix, informou que JÁ PAGOU (identificador " + conta.id + (i + 1) + ")" : "Pix";
+    if (p.forma !== "dinheiro") return FORMAS[p.forma];
+    var t = lerCents(p.troco);
+    return "dinheiro" + (!t ? "" : t === p.valor ? " (valor exato, sem troco)" : ", troco para " + money(t) + (paraLoja ? " (levar " + money(t - p.valor) + " de troco)" : ""));
+  }
+  function chamadaDivisao(paraLoja) {
+    var pres = [], soma = 0, cartao = false;
+    partes.forEach(function (p, i) { if (p.forma !== "pix") { pres.push(nomeParte(p, i)); soma += p.valor; if (p.forma !== "dinheiro") cartao = true; } });
+    if (!pres.length) return "";
+    var quemPaga = juntar(pres), m = conta.modo;
+    if (!paraLoja) return m === "mesa" ? "O atendente vai até a mesa " + conta.mesa + " para receber de " + quemPaga + "." :
+      quemPaga + (pres.length > 1 ? " pagam " : " paga ") + (m === "retirada" ? "no balcão." : "na entrega.");
+    return (m === "mesa" ? "*IR ATÉ A MESA " + conta.mesa + "* para receber " : m === "retirada" ? "Receber no balcão " : "Receber na entrega ") +
+      money(soma) + " de " + quemPaga + (cartao ? " (levar a maquininha)" : "");
+  }
 
   // ---------- Pix (BR Code, padrão do Banco Central) ----------
   function tlv(id, v) { return id + String(v.length).padStart(2, "0") + v; }
@@ -707,11 +844,14 @@ textarea { min-height: 4rem; resize: vertical; }
     return p + crc16(p);
   }
 
-  var pixAtual = "";
+  var pixAtual = "", pixFila = [], pixPos = 0; // pixFila: [{ nome, valor, txid }]
   function abrirPix() {
-    var tot = contaTotal();
-    pixAtual = pixPayload(tot, conta.id);
+    var f = pixFila[pixPos], tot = f.valor, ultimo = pixPos === pixFila.length - 1;
+    pixAtual = pixPayload(tot, f.txid);
     $("pixTotal").textContent = money(tot);
+    $("pixQuem").hidden = !dividindo();
+    $("pixQuem").textContent = "Pix de " + f.nome + (pixFila.length > 1 ? " · " + (pixPos + 1) + " de " + pixFila.length : "");
+    $("paid").textContent = ultimo ? "Já paguei: avisar o Bookafé no WhatsApp" : "Já paguei: próximo Pix (" + pixFila[pixPos + 1].nome + ")";
     mostraQuem();
     $("pixCode").textContent = pixAtual;
     var aviso = pendente(LOJA.pix.chave) ? "Chave Pix ainda não configurada: este QR é só demonstração e não funciona no banco." :
@@ -736,7 +876,9 @@ textarea { min-height: 4rem; resize: vertical; }
     }
   });
   $("back").addEventListener("click", function () { show("stepConta"); });
-  $("paid").addEventListener("click", enviarFechamento);
+  $("paid").addEventListener("click", function () {
+    if (pixPos < pixFila.length - 1) { pixPos++; abrirPix(); } else { enviarFechamento(); }
+  });
 
   // ---------- quem pediu (da conta, se já existe; senão, do formulário) ----------
   function nomeCliente() { return $("cliente").value.trim().replace(/\s+/g, " "); }
@@ -784,7 +926,13 @@ textarea { min-height: 4rem; resize: vertical; }
       linhas = linhas.concat(linhasItens(p.itens));
     });
     linhas.push(""); linhas.push("*Total da conta: " + money(tot) + "*"); linhas.push("");
-    if (pag() === "pix") {
+    if (dividindo()) {
+      linhas.push("Conta dividida em " + partes.length + ":");
+      partes.forEach(function (p, i) { linhas.push((i + 1) + ". " + nomeParte(p, i) + " — " + money(p.valor) + " — " + textoParte(p, i, true)); });
+      linhas.push("");
+      if (chamadaDivisao(true)) linhas.push(chamadaDivisao(true));
+      if (pixFila.length) linhas.push("Conferir " + (pixFila.length > 1 ? "os " + pixFila.length + " Pix" : "o Pix") + " no app do banco.");
+    } else if (pag() === "pix") {
       linhas.push("Pagamento: Pix de " + money(tot) + " — cliente informou que JÁ PAGOU.");
       linhas.push("Identificador do Pix: " + conta.id + " (conferir no app do banco)");
     } else {
@@ -799,7 +947,9 @@ textarea { min-height: 4rem; resize: vertical; }
     window.open(url, "_blank", "noopener");
     mostraQuem();
     $("doneTotal").textContent = money(contaTotal());
-    $("doneInfo").textContent = pag() === "pix" ? "O Bookafé confere o Pix e confirma pelo WhatsApp." : textoPresencial(false);
+    $("doneInfo").textContent = dividindo() ?
+      ["Conta dividida entre " + partes.length + " pessoas.", chamadaDivisao(false), pixFila.length ? "O Bookafé confere " + (pixFila.length > 1 ? "os Pix" : "o Pix") + " e confirma pelo WhatsApp." : ""].filter(Boolean).join(" ") :
+      (pag() === "pix" ? "O Bookafé confere o Pix e confirma pelo WhatsApp." : textoPresencial(false));
     conta.fechada = true; salvaConta(); // a conta termina quando esta janela for fechada
     show("stepDone");
   }

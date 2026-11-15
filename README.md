@@ -35,7 +35,20 @@ Enquanto `emAtualizacao: true`, o cliente vê o aviso **"Cardápio em atualizaç
 3. **Fechar a conta:** quando terminar, o cliente abre **Minha conta**, confere tudo o que pediu e escolhe como pagar:
    - **Pix agora:** aparece o QR Code no padrão do Banco Central, com o valor exato da conta e um identificador (ex.: `BKF4K9Z2Q`). Depois de pagar, ele toca em "Já paguei".
    - **Chamar atendente na mesa:** cartão de débito, cartão de crédito ou dinheiro (no dinheiro, pode dizer para quanto precisa de troco). Em pedidos de retirada, a opção vira "Pagar no balcão".
+   - **Dividir a conta:** se uma pessoa abriu a conta e a mesa quer dividir, ela marca "Dividir a conta". Cada pessoa aparece com nome, valor e forma de pagamento (Pix, débito, crédito ou dinheiro com troco). Quem não mudar o valor divide por igual o que falta; a soma tem que fechar com o total. Cada Pix tem o seu QR Code, um depois do outro.
 4. O WhatsApp recebe `FECHAR CONTA · MESA 4 · ANA`, com todos os pedidos, o total e a forma de pagamento (ex.: `IR ATÉ A MESA 4 para receber em cartão de débito (levar a maquininha)`).
+
+Exemplo de fechamento dividido:
+
+```
+Conta dividida em 3:
+1. Ana — R$ 15,00 — Pix, informou que JÁ PAGOU (identificador BKF4K9Z2Q1)
+2. João — R$ 10,00 — cartão de débito
+3. Bia — R$ 10,00 — dinheiro, troco para R$ 20,00 (levar R$ 10,00 de troco)
+
+IR ATÉ A MESA 4 para receber R$ 20,00 de João e Bia (levar a maquininha)
+Conferir o Pix no app do banco.
+```
 
 Limites para a equipe saber:
 
