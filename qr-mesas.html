@@ -25,15 +25,18 @@ button { min-height: 2.9rem; padding: 0 1.4rem; border: 0; border-radius: 999px;
 .card .n { font: 800 1.9rem/1 "Fraunces", Georgia, serif; color: #9a4f22; }
 .card .brand { font: 800 1.1rem "Fraunces", Georgia, serif; margin-top: .2rem; }
 .card svg { display: block; width: 100%; max-width: 11rem; height: auto; margin: .6rem auto; }
-.card small { display: block; color: #6f5a49; font-size: .85rem; line-height: 1.35; }
+.card .legenda { display: block; margin-top: .2rem; color: #9a4f22; font: 800 1.25rem/1.2 "Figtree", system-ui, sans-serif; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
 @media (max-width: 640px) { form { grid-template-columns: minmax(0, 1fr); } }
 @media print {
   @page { size: A4; margin: 10mm; }
   body { background: #fff; }
   .wrap { padding: 0; max-width: none; }
   .no-print { display: none !important; }
-  .grid { grid-template-columns: repeat(2, 1fr); gap: 8mm; margin: 0; }
-  .card { border: 1px dashed #999; }
+  /* 6 cartões por folha: 2 colunas × 3 linhas de 86 mm */
+  .grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 86mm; gap: 6mm 8mm; margin: 0; }
+  .card { display: flex; flex-direction: column; justify-content: center; padding: 4mm; border: 1px dashed #999; }
+  .card svg { max-width: 46mm; margin: 2mm auto; }
+  .card .legenda { font-size: 15pt; }
 }
 </style>
 </head>
@@ -65,8 +68,10 @@ button { min-height: 2.9rem; padding: 0 1.4rem; border: 0; border-radius: 999px;
     var qr = qrcode(0, "M"); qr.addData(texto); qr.make();
     return qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true, title: titulo });
   }
-  function card(rotulo, link, legenda) {
-    return '<div class="card"><div class="n">' + rotulo + '</div><div class="brand">Bookafé</div>' + qrSvg(link, rotulo) + "<small>" + legenda + "</small></div>";
+  // Legenda impressa embaixo de cada QR Code (mesas e balcão).
+  var LEGENDA = "ESCANEIE O QR CODE E FAÇA SEU PEDIDO";
+  function card(rotulo, link) {
+    return '<div class="card"><div class="n">' + rotulo + '</div><div class="brand">Bookafé</div>' + qrSvg(link, rotulo) + '<strong class="legenda">' + LEGENDA + "</strong></div>";
   }
   function gerar() {
     var base = $("url").value.trim(), n = Math.max(1, Math.min(60, parseInt($("qtd").value, 10) || 1));
@@ -74,8 +79,8 @@ button { min-height: 2.9rem; padding: 0 1.4rem; border: 0; border-radius: 999px;
     $("aviso").hidden = !local;
     $("aviso").textContent = "Atenção: esse endereço só funciona neste computador. Publique o cardápio (GitHub Pages) e cole aqui o endereço público antes de imprimir.";
     var sep = base.indexOf("?") === -1 ? "?" : "&";
-    var html = card("Balcão", base, "Aponte a câmera para ver o cardápio e pedir pelo WhatsApp");
-    for (var i = 1; i <= n; i++) html += card("Mesa " + i, base + sep + "mesa=" + i, "Aponte a câmera, escolha e pague com Pix pelo celular");
+    var html = card("Balcão", base);
+    for (var i = 1; i <= n; i++) html += card("Mesa " + i, base + sep + "mesa=" + i);
     $("grid").innerHTML = html;
   }
   $("f").addEventListener("submit", function (e) { e.preventDefault(); gerar(); });
