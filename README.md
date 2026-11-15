@@ -63,5 +63,5 @@ Quem lê o QR de uma mesa não digita o número: o cardápio mostra "Você está
 O Bookafé tem **10 mesas** (mude `mesas: 10` na área de edição se isso mudar). Os QR apontam para `https://km097755-cpu.github.io/bookafe/?mesa=N`.
 
 1. Ligue o GitHub Pages do repositório (Settings → Pages → branch `main`, pasta `/root`). Sem isso os QR não abrem nada.
-2. Imprima `qr-mesas.pdf`, recorte e cole cada QR na mesa do mesmo número.
+2. Imprima `qr-mesas.pdf`, recorte e cole cada QR na mesa do mesmo número. Cada cartão traz a legenda **"ESCANEIE O QR CODE E FAÇA SEU PEDIDO"**.
 3. Mudou o número de mesas ou o endereço? Abra `qr-mesas.html`, ajuste e clique em **Imprimir**.
